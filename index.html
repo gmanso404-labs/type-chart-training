@@ -23,6 +23,7 @@
   --bg:#11131A; --surface:#1A1D27; --fg:#E7E9F1; --muted:#9BA1B4; --line:#2C3142;
   --accent:#7C89FF; --on-accent:#0E1020; --sup:#4ACB83; --res:#FF6E6E; --warn:#F0B44C; --on-mark:#0E1020; color-scheme:dark}
 
+html{scrollbar-gutter:stable}
 body{background:var(--bg);color:var(--fg);font-family:var(--body);font-size:15px;line-height:1.5}
 .wrap{max-width:1260px;margin:0 auto;padding-block:24px 40px;
   padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
@@ -223,7 +224,7 @@ select{font:inherit;padding:7px 9px;border-radius:8px;border:1px solid var(--lin
     <div class="seg" role="tablist" data-i18n-aria="viewAria">
       <button role="tab" id="tab-circular" data-view="circular" aria-selected="true" data-i18n="tabCircular"></button>
       <button role="tab" id="tab-fuerzas" data-view="fuerzas" aria-selected="false" data-i18n="tabForce"></button>
-      <button role="tab" id="tab-estatico" data-view="estatico" aria-selected="false" data-i18n="tabStatic"></button>
+      <button role="tab" id="tab-estatico" data-view="estatico" aria-selected="false" data-i18n="tabStatic" hidden></button>
       <button role="tab" id="tab-grupos" data-view="grupos" aria-selected="false" data-i18n="tabGroups"></button>
       <button role="tab" id="tab-practica" data-view="practica" aria-selected="false" data-i18n="tabPractice"></button>
     </div>
@@ -1242,7 +1243,7 @@ buildGroups('svg-grupos');
 const h=(location.hash||'').slice(1);
 applyLang();
 initPractice();
-setView(['circular','fuerzas','estatico','grupos','practica'].includes(h)?h:'circular');
+setView(['circular','fuerzas','grupos','practica'].includes(h)?h:'circular');
 </script>
 </body>
 </html>
