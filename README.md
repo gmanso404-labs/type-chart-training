@@ -1,6 +1,6 @@
 # Type chart training
 
-Single-file page to study the Pokémon type chart (Gen 6+, with Fairy): interactive graphs of super effective (x2) and not very effective (x0.5) matchups, plus a practice quiz in Spanish.
+Single-file page to study the Pokémon type chart (Gen 6+, with Fairy): interactive graphs of super effective (x2) and not very effective (x0.5) matchups, plus a practice quiz. Available in Spanish and English (switcher in the top right corner; the choice is remembered in the browser).
 
 - Live: https://gmanso404-labs.github.io/type-chart-training/
 - Direct links: `#circular`, `#fuerzas`, `#estatico`, `#grupos`, `#practica`

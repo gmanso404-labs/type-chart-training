@@ -29,6 +29,9 @@ body{background:var(--bg);color:var(--fg);font-family:var(--body);font-size:15px
 h1{font-family:var(--display);font-weight:700;font-size:clamp(1.6rem,3.2vw,2.3rem);margin:0;letter-spacing:.01em;text-wrap:balance}
 .sub{color:var(--muted);margin:.3rem 0 0;max-width:68ch}
 .sub b{color:var(--fg)}
+.top{display:flex;justify-content:space-between;align-items:flex-start;gap:12px 20px}
+.seg.lang{flex:none}
+.seg.lang button{padding:8px 11px}
 
 .bar{display:flex;flex-wrap:wrap;gap:12px 22px;align-items:center;margin:20px 0 14px}
 .seg{display:flex;flex-wrap:wrap;gap:3px;background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:3px}
@@ -101,6 +104,8 @@ svg.static .n{cursor:default}
 .mn{margin:2px 0 10px 4.2rem;padding:8px 10px;border-radius:8px;background:var(--bg);font-size:.86rem;line-height:1.55}
 .mn::before{content:"Para recordarlo";display:block;font:600 .64rem var(--display);text-transform:uppercase;letter-spacing:.1em;color:var(--muted);margin-bottom:2px}
 @media (max-width:420px){.mn{margin-left:0}}
+html[lang="en"] .mn::before{content:"To remember"}
+html[lang="en"] .mn2::before{content:"To remember · "}
 .tk{display:inline-flex;align-items:center;gap:3px;font-weight:700;white-space:nowrap;vertical-align:-3px}
 .grp-bg{fill:var(--bg);stroke:var(--line);stroke-width:1.5}
 .grp-lab{font:600 12px var(--display);fill:var(--muted);text-transform:uppercase;letter-spacing:.12em}
@@ -203,108 +208,216 @@ select{font:inherit;padding:7px 9px;border-radius:8px;border:1px solid var(--lin
 </head>
 <body>
 <div class="wrap">
-  <header>
-    <h1>Grafo de tipos Pokémon</h1>
-    <p class="sub">Tabla de los juegos principales (generación 6 en adelante, con Hada). Cada flecha va del tipo que <b>ataca</b> al que <b>defiende</b>: verde continua = <b>x2</b>, roja discontinua = <b>x0.5</b>. Las inmunidades (x0) no aparecen.</p>
+  <header class="top">
+    <div>
+      <h1 data-i18n="title">Grafo de tipos Pokémon</h1>
+      <p class="sub" data-i18n-html="sub"></p>
+    </div>
+    <div class="seg lang" role="group" aria-label="Idioma / Language">
+      <button data-lang="es" aria-pressed="true" lang="es" title="Español">ES</button>
+      <button data-lang="en" aria-pressed="false" lang="en" title="English">EN</button>
+    </div>
   </header>
 
   <div class="bar">
-    <div class="seg" role="tablist" aria-label="Vista">
-      <button role="tab" id="tab-circular" data-view="circular" aria-selected="true">Circular interactivo</button>
-      <button role="tab" id="tab-fuerzas" data-view="fuerzas" aria-selected="false">Fuerzas</button>
-      <button role="tab" id="tab-estatico" data-view="estatico" aria-selected="false">Circular estático</button>
-      <button role="tab" id="tab-grupos" data-view="grupos" aria-selected="false">Por grupos</button>
-      <button role="tab" id="tab-practica" data-view="practica" aria-selected="false">Práctica</button>
+    <div class="seg" role="tablist" data-i18n-aria="viewAria">
+      <button role="tab" id="tab-circular" data-view="circular" aria-selected="true" data-i18n="tabCircular"></button>
+      <button role="tab" id="tab-fuerzas" data-view="fuerzas" aria-selected="false" data-i18n="tabForce"></button>
+      <button role="tab" id="tab-estatico" data-view="estatico" aria-selected="false" data-i18n="tabStatic"></button>
+      <button role="tab" id="tab-grupos" data-view="grupos" aria-selected="false" data-i18n="tabGroups"></button>
+      <button role="tab" id="tab-practica" data-view="practica" aria-selected="false" data-i18n="tabPractice"></button>
     </div>
     <div class="grp" id="showGrp">
-      <span class="lbl">Mostrar</span>
+      <span class="lbl" data-i18n="show"></span>
       <div class="seg toggles">
         <button id="t2" aria-pressed="true"><span class="sw s2"></span>x2</button>
         <button id="t05" aria-pressed="true"><span class="sw s05"></span>x0.5</button>
       </div>
     </div>
     <div class="grp" id="modeGrp">
-      <span class="lbl">Al elegir un tipo, ver</span>
+      <span class="lbl" data-i18n="modeLbl"></span>
       <div class="seg" id="modes">
-        <button data-mode="atk" aria-pressed="true">Cuando ataca</button>
-        <button data-mode="def" aria-pressed="false">Cuando defiende</button>
-        <button data-mode="both" aria-pressed="false">Ambos</button>
+        <button data-mode="atk" aria-pressed="true" data-i18n="whenAtk"></button>
+        <button data-mode="def" aria-pressed="false" data-i18n="whenDef"></button>
+        <button data-mode="both" aria-pressed="false" data-i18n="both"></button>
       </div>
     </div>
-    <label class="grp chk" id="dragGrp" hidden><input type="checkbox" id="dragChk"> Permitir arrastrar los tipos</label>
+    <label class="grp chk" id="dragGrp" hidden><input type="checkbox" id="dragChk"> <span data-i18n="allowDrag"></span></label>
   </div>
 
   <div class="stage" id="stage">
     <div class="graph">
-      <svg id="svg-circular" role="img" aria-label="Grafo circular de efectividades"></svg>
-      <svg id="svg-fuerzas" role="img" aria-label="Grafo de fuerzas de efectividades" hidden></svg>
-      <svg id="svg-estatico" role="img" aria-label="Grafo circular estático de efectividades" hidden></svg>
-      <svg id="svg-grupos" role="img" aria-label="Grafo por grupos con menos cruces" hidden></svg>
-      <div class="hint" id="hint">Pasa el ratón o toca un tipo para aislar sus flechas. Toca el fondo para soltarlo.</div>
+      <svg id="svg-circular" role="img" data-i18n-aria="ariaCircular"></svg>
+      <svg id="svg-fuerzas" role="img" data-i18n-aria="ariaForce" hidden></svg>
+      <svg id="svg-estatico" role="img" data-i18n-aria="ariaStatic" hidden></svg>
+      <svg id="svg-grupos" role="img" data-i18n-aria="ariaGroups" hidden></svg>
+      <div class="hint" id="hint"></div>
     </div>
     <aside class="panel" id="panel" aria-live="polite"></aside>
   </div>
 
   <section class="pr" id="practice" hidden>
     <details class="card prset" id="prset" open>
-      <summary>Ajustes</summary>
+      <summary data-i18n="settings"></summary>
       <div class="fs">
-        <div class="f"><span class="lbl">Tipo defensor</span>
-          <label><input type="radio" name="pdef" value="mono"> Un solo tipo</label>
-          <label><input type="radio" name="pdef" value="dual"> Doble tipo</label>
-          <label><input type="radio" name="pdef" value="both"> Ambos</label></div>
-        <div class="f"><label class="lbl" for="pfocus">Centrarse en un tipo</label><select id="pfocus"></select></div>
-        <div class="f"><span class="lbl">Pausa entre preguntas</span>
-          <label><input type="radio" name="ppause" value="d5"> 5 segundos</label>
-          <label><input type="radio" name="ppause" value="d5err"> 5 segundos solo si fallo</label>
-          <label><input type="radio" name="ppause" value="none"> Sin pausa</label>
-          <label><input type="radio" name="ppause" value="manual"> Avanzar a mano</label></div>
-        <div class="f"><span class="lbl">Respuestas</span>
-          <label><input type="radio" name="pfmt" value="num"> Números (x2)</label>
-          <label><input type="radio" name="pfmt" value="verb"> Palabras (Súper eficaz)</label>
-          <label><input type="checkbox" id="pextra"> x4 y x0.25 también en preguntas de un tipo</label>
-          <label><input type="checkbox" id="pimm"> Incluir inmunidades (x0)</label>
-          <label><input type="checkbox" id="psmart"> Repaso inteligente: pregunta más lo que fallo</label></div>
-        <div class="f"><span class="lbl">Reglas para recordar</span>
-          <label><input type="radio" name="pmnem" value="def"> Desde el que defiende: qué le entra y qué aguanta</label>
-          <label><input type="radio" name="pmnem" value="atk"> Desde el que ataca: a qué pega fuerte o flojo</label>
-          <label><input type="radio" name="pmnem" value="both"> Las dos</label></div>
-        <div class="f"><span class="lbl">Preguntas de tipo completo</span>
-          <label><input type="checkbox" id="psdef"> Qué le entra a un tipo (defensa)</label>
-          <label><input type="checkbox" id="psatk"> A qué pega un tipo (ataque)</label>
-          <label class="lbl" for="psfreq">Frecuencia</label>
-          <select id="psfreq"><option value="low">Pocas (1 de cada 10)</option><option value="mid">Algunas (1 de cada 5)</option><option value="high">Muchas (1 de cada 3)</option></select>
-          <p class="hintf">Con el repaso inteligente salen más si las fallas y menos si las dominas, y se eligen antes los tipos que más te cuestan.</p></div>
+        <div class="f"><span class="lbl" data-i18n="sDefType"></span>
+          <label><input type="radio" name="pdef" value="mono"> <span data-i18n="sMono"></span></label>
+          <label><input type="radio" name="pdef" value="dual"> <span data-i18n="sDual"></span></label>
+          <label><input type="radio" name="pdef" value="both"> <span data-i18n="both"></span></label></div>
+        <div class="f"><label class="lbl" for="pfocus" data-i18n="sFocus"></label><select id="pfocus"></select></div>
+        <div class="f"><span class="lbl" data-i18n="sPause"></span>
+          <label><input type="radio" name="ppause" value="d5"> <span data-i18n="sP5"></span></label>
+          <label><input type="radio" name="ppause" value="d5err"> <span data-i18n="sP5err"></span></label>
+          <label><input type="radio" name="ppause" value="none"> <span data-i18n="sPnone"></span></label>
+          <label><input type="radio" name="ppause" value="manual"> <span data-i18n="sPmanual"></span></label></div>
+        <div class="f"><span class="lbl" data-i18n="sAnswers"></span>
+          <label><input type="radio" name="pfmt" value="num"> <span data-i18n="sNum"></span></label>
+          <label><input type="radio" name="pfmt" value="verb"> <span data-i18n="sVerb"></span></label>
+          <label><input type="checkbox" id="pextra"> <span data-i18n="sExtra"></span></label>
+          <label><input type="checkbox" id="pimm"> <span data-i18n="sImm"></span></label>
+          <label><input type="checkbox" id="psmart"> <span data-i18n="sSmart"></span></label></div>
+        <div class="f"><span class="lbl" data-i18n="sMnem"></span>
+          <label><input type="radio" name="pmnem" value="def"> <span data-i18n="sMnDef"></span></label>
+          <label><input type="radio" name="pmnem" value="atk"> <span data-i18n="sMnAtk"></span></label>
+          <label><input type="radio" name="pmnem" value="both"> <span data-i18n="sMnBoth"></span></label></div>
+        <div class="f"><span class="lbl" data-i18n="sSort"></span>
+          <label><input type="checkbox" id="psdef"> <span data-i18n="sSortDef"></span></label>
+          <label><input type="checkbox" id="psatk"> <span data-i18n="sSortAtk"></span></label>
+          <label class="lbl" for="psfreq" data-i18n="sFreq"></label>
+          <select id="psfreq"><option value="low" data-i18n="sFlow"></option><option value="mid" data-i18n="sFmid"></option><option value="high" data-i18n="sFhigh"></option></select>
+          <p class="hintf" data-i18n="sHint"></p></div>
       </div>
     </details>
     <div class="card quiz">
-      <div class="qhead"><span class="lbl">Pregunta <b id="qn">1</b></span><span class="streak">Racha <b id="qstreak">0</b></span></div>
-      <h2 class="qtitle" id="qtitle">¿Qué efectividad tiene este ataque?</h2>
+      <div class="qhead"><span class="lbl"><span data-i18n="question"></span> <b id="qn">1</b></span><span class="streak"><span data-i18n="streak"></span> <b id="qstreak">0</b></span></div>
+      <h2 class="qtitle" id="qtitle"></h2>
       <div class="matchup">
-        <div class="side" id="sideAtk"><span class="lbl">Ataca</span><div id="qatk"></div></div>
-        <span class="vs" id="qvs">contra</span>
-        <div class="side" id="sideDef"><span class="lbl">Defiende</span><div id="qdef"></div></div>
+        <div class="side" id="sideAtk"><span class="lbl" data-i18n="attacks"></span><div id="qatk"></div></div>
+        <span class="vs" id="qvs" data-i18n="vs"></span>
+        <div class="side" id="sideDef"><span class="lbl" data-i18n="defends"></span><div id="qdef"></div></div>
       </div>
       <div class="opts" id="qopts"></div>
       <div class="board" id="qsort" hidden></div>
       <div class="fb" id="qfb" aria-live="polite" hidden></div>
-      <div class="qfoot"><div class="timer" id="qtimer"><i></i></div><button class="primary" id="qcheck" hidden>Comprobar</button><button class="primary" id="qnext" hidden>Siguiente</button></div>
-      <p class="keys" id="qkeys">Atajos: teclas 1 a 6 para responder, Intro para pasar a la siguiente.</p>
+      <div class="qfoot"><div class="timer" id="qtimer"><i></i></div><button class="primary" id="qcheck" hidden data-i18n="check"></button><button class="primary" id="qnext" hidden data-i18n="next"></button></div>
+      <p class="keys" id="qkeys"></p>
     </div>
     <div class="card summ" id="summ"></div>
   </section>
-  <footer class="note" style="text-align:center;margin:28px 0 8px">Proyecto fan sin ánimo de lucro. Pokémon y los nombres de los tipos son marcas de Nintendo, Game Freak y The Pokémon Company.</footer>
+  <footer class="note" style="text-align:center;margin:28px 0 8px" data-i18n="footer"></footer>
 </div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.9.0/d3.min.js"></script>
 <script>
+/* idioma: 'es' o 'en'. Se guarda en el navegador; si no hay nada guardado se usa el del navegador */
+const LS_LANG='tipos-idioma';
+let L=(()=>{ try{ const v=localStorage.getItem(LS_LANG); if(v==='es'||v==='en') return v; }catch(e){} return /^es\b/i.test(navigator.language||'')?'es':'en'; })();
+const STR={
+es:{
+  title:'Grafo de tipos Pokémon',
+  sub:'Tabla de los juegos principales (generación 6 en adelante, con Hada). Cada flecha va del tipo que <b>ataca</b> al que <b>defiende</b>: verde continua = <b>x2</b>, roja discontinua = <b>x0.5</b>. Las inmunidades (x0) no aparecen.',
+  viewAria:'Vista', tabCircular:'Circular interactivo', tabForce:'Fuerzas', tabStatic:'Circular estático', tabGroups:'Por grupos', tabPractice:'Práctica',
+  show:'Mostrar', modeLbl:'Al elegir un tipo, ver', whenAtk:'Cuando ataca', whenDef:'Cuando defiende', both:'Ambos', allowDrag:'Permitir arrastrar los tipos',
+  ariaCircular:'Grafo circular de efectividades', ariaForce:'Grafo de fuerzas de efectividades', ariaStatic:'Grafo circular estático de efectividades', ariaGroups:'Grafo por grupos con menos cruces',
+  hintStatic:'Vista fija con todas las flechas a la vez.',
+  hintGroups:'Distribución calculada para que se crucen las menos líneas posibles. Toca un tipo para aislar sus flechas.',
+  hintForce:'Pasa el ratón o toca un tipo para aislar sus flechas. Activa «Permitir arrastrar los tipos» arriba si quieres recolocarlos.',
+  hintCircular:'Pasa el ratón o toca un tipo para aislar sus flechas. Toca el fondo para soltarlo.',
+  groupA:'Elementos y materia', groupB:'Cuerpo, mente y magia',
+  settings:'Ajustes', sDefType:'Tipo defensor', sMono:'Un solo tipo', sDual:'Doble tipo', sFocus:'Centrarse en un tipo', allTypes:'Todos los tipos',
+  sPause:'Pausa entre preguntas', sP5:'5 segundos', sP5err:'5 segundos solo si fallo', sPnone:'Sin pausa', sPmanual:'Avanzar a mano',
+  sAnswers:'Respuestas', sNum:'Números (x2)', sVerb:'Palabras (Súper eficaz)', sExtra:'x4 y x0.25 también en preguntas de un tipo', sImm:'Incluir inmunidades (x0)', sSmart:'Repaso inteligente: pregunta más lo que fallo',
+  sMnem:'Reglas para recordar', sMnDef:'Desde el que defiende: qué le entra y qué aguanta', sMnAtk:'Desde el que ataca: a qué pega fuerte o flojo', sMnBoth:'Las dos',
+  sSort:'Preguntas de tipo completo', sSortDef:'Qué le entra a un tipo (defensa)', sSortAtk:'A qué pega un tipo (ataque)', sFreq:'Frecuencia',
+  sFlow:'Pocas (1 de cada 10)', sFmid:'Algunas (1 de cada 5)', sFhigh:'Muchas (1 de cada 3)',
+  sHint:'Con el repaso inteligente salen más si las fallas y menos si las dominas, y se eligen antes los tipos que más te cuestan.',
+  question:'Pregunta', streak:'Racha', attacks:'Ataca', vs:'contra', defends:'Defiende', check:'Comprobar', next:'Siguiente',
+  footer:'Proyecto fan sin ánimo de lucro. Pokémon y los nombres de los tipos son marcas de Nintendo, Game Freak y The Pokémon Company.',
+  none:'Ninguno', pickType:'Elige un tipo',
+  pickTypeP:'Pasa el ratón por un círculo o tócalo para fijarlo. Aquí verás contra qué pega fuerte o flojo y qué le pega fuerte o flojo.',
+  rel2:'relaciones x2', rel05:'relaciones x0.5',
+  selfNote:'Las flechas que vuelven al mismo tipo son autoefectividades: Dragón y Fantasma se pegan x2 a sí mismos; Fuego, Agua, Eléctrico, Planta, Hielo, Veneno, Psíquico, Acero y Siniestro se resisten a sí mismos.',
+  pinned:'Fijado · toca el fondo para soltar', preview:'Vista previa', atkHead:'Cuando ataca, hace…', defHead:'Cuando defiende, recibe…',
+  panelNote:'Toca un tipo de la lista para saltar a él. Cambia "Al elegir un tipo, ver" para pasar de ataque a defensa.',
+  verb:{4:'Extremadamente eficaz',2:'Súper eficaz',1:'Normal',0.5:'Poco eficaz',0.25:'Muy poco eficaz',0:'No le afecta'},
+  qTitle:'¿Qué efectividad tiene este ataque?', qSortDef:'¿Qué le entra a este tipo?', qSortAtk:'¿A qué le pega este tipo?',
+  qKeys:'Atajos: teclas 1 a 6 para responder, Intro para pasar a la siguiente.',
+  qSortKeys:'Arrastra cada tipo a su columna, o tócalo y después toca la columna (o pulsa 1 a 4). Intro para comprobar.',
+  correct:'¡Correcto!', wrongWas:m=>'No. Era '+m,
+  zones:['Eficaz','Neutro','Resiste','Inmune'],
+  restDef:t=>`El resto no tiene nada especial contra ${t}: daño normal (x1).`, restAtk:t=>`Contra el resto, ${t} hace daño normal (x1).`,
+  perfect:'¡Perfecto! 18 de 18', okOf:n=>`${n} de 18 bien`, redHint:'Los que están en rojo indican a qué columna iban.',
+  fullTypes:'Tipos completos', sortRowDef:'Qué le entra a', sortRowAtk:'A qué pega',
+  times:n=>`${n} ${n===1?'vez':'veces'}`, perfects:n=>`${n} ${n===1?'perfecta':'perfectas'}`,
+  neutralAtk:(a,l)=>`${a} no tiene ninguna regla especial contra ${l.join(' ni ')}: daño normal (x1).`,
+  neutralDef:(l,a)=>`${l.join(' y ')} no ${l.length>1?'tienen':'tiene'} debilidad ni resistencia a ${a}: daño normal (x1).`,
+  ofN:(a,b)=>`${a} de ${b}`,
+  yourSummary:'Tu resumen', summaryEmpty:'Aquí verás qué tipos se te dan mejor y cuáles conviene repasar, separando cuando el tipo ataca y cuando defiende. Responde unas cuantas preguntas para empezar.',
+  practiceX:n=>`Practicar ${n}`, answeredN:'respondidas', accuracy:'acierto', bestStreak:'mejor racha', bestAt:'Se te dan mejor', review:'A repasar',
+  tapToPractice:'Toca un tipo para practicar solo ese.',
+  needMore:'Cuando lleves unas preguntas más con cada tipo (mínimo 4) aparecerán tus mejores tipos y los que conviene repasar.',
+  accByType:'Acierto por tipo', gameOrder:'Ver en orden del juego', worstFirst:'Ver peores primero',
+  topFails:'Tus fallos más repetidos', failedN:(e,n)=>`Fallada ${e} ${e===1?'vez':'veces'} de ${n}`, remember:'Recuerda:',
+  resetQ:'¿Borrar todo tu historial de práctica?', resetYes:'Sí, borrar', cancel:'Cancelar', resetAsk:'Borrar estadísticas',
+  storeLocal:'Guardado en este navegador', storeLocalOnly:'Guardado solo en este navegador', storeAccount:'Guardado en tu cuenta: lo verás en cualquier dispositivo'
+},
+en:{
+  title:'Pokémon type chart graph',
+  sub:'Chart for the main series games (generation 6 onwards, with Fairy). Each arrow goes from the <b>attacking</b> type to the <b>defending</b> one: solid green = <b>x2</b>, dashed red = <b>x0.5</b>. Immunities (x0) are not shown.',
+  viewAria:'View', tabCircular:'Interactive circle', tabForce:'Force layout', tabStatic:'Static circle', tabGroups:'By groups', tabPractice:'Practice',
+  show:'Show', modeLbl:'When picking a type, show', whenAtk:'When attacking', whenDef:'When defending', both:'Both', allowDrag:'Allow dragging the types',
+  ariaCircular:'Circular type effectiveness graph', ariaForce:'Force-directed type effectiveness graph', ariaStatic:'Static circular type effectiveness graph', ariaGroups:'Grouped graph with fewer crossings',
+  hintStatic:'Fixed view with every arrow at once.',
+  hintGroups:'Layout computed so that as few lines as possible cross. Tap a type to isolate its arrows.',
+  hintForce:'Hover or tap a type to isolate its arrows. Turn on “Allow dragging the types” above if you want to move them around.',
+  hintCircular:'Hover or tap a type to isolate its arrows. Tap the background to release it.',
+  groupA:'Elements and matter', groupB:'Body, mind and magic',
+  settings:'Settings', sDefType:'Defending type', sMono:'Single type', sDual:'Dual type', sFocus:'Focus on a type', allTypes:'All types',
+  sPause:'Pause between questions', sP5:'5 seconds', sP5err:'5 seconds only when wrong', sPnone:'No pause', sPmanual:'Advance manually',
+  sAnswers:'Answers', sNum:'Numbers (x2)', sVerb:'Words (Super effective)', sExtra:'x4 and x0.25 also in single-type questions', sImm:'Include immunities (x0)', sSmart:'Smart review: ask more of what I get wrong',
+  sMnem:'Memory rules', sMnDef:'From the defender: what hurts it and what it shrugs off', sMnAtk:'From the attacker: what it hits hard or weakly', sMnBoth:'Both',
+  sSort:'Full-type questions', sSortDef:'What hurts a type (defence)', sSortAtk:'What a type hits (attack)', sFreq:'Frequency',
+  sFlow:'Few (1 in 10)', sFmid:'Some (1 in 5)', sFhigh:'Many (1 in 3)',
+  sHint:'With smart review they show up more if you get them wrong and less once you master them, and the types you struggle with come first.',
+  question:'Question', streak:'Streak', attacks:'Attacks', vs:'vs', defends:'Defends', check:'Check', next:'Next',
+  footer:'Non-profit fan project. Pokémon and the type names are trademarks of Nintendo, Game Freak and The Pokémon Company.',
+  none:'None', pickType:'Pick a type',
+  pickTypeP:'Hover over a circle or tap it to pin it. Here you will see what it hits hard or weakly and what hits it hard or weakly.',
+  rel2:'x2 matchups', rel05:'x0.5 matchups',
+  selfNote:'Arrows that loop back to the same type are self-matchups: Dragon and Ghost hit themselves x2; Fire, Water, Electric, Grass, Ice, Poison, Psychic, Steel and Dark resist themselves.',
+  pinned:'Pinned · tap the background to release', preview:'Preview', atkHead:'When attacking, it deals…', defHead:'When defending, it takes…',
+  panelNote:'Tap a type in the list to jump to it. Change “When picking a type, show” to switch between attack and defence.',
+  verb:{4:'Extremely effective',2:'Super effective',1:'Normal',0.5:'Not very effective',0.25:'Barely effective',0:'No effect'},
+  qTitle:'How effective is this attack?', qSortDef:'What hurts this type?', qSortAtk:'What does this type hit?',
+  qKeys:'Shortcuts: keys 1 to 6 to answer, Enter for the next one.',
+  qSortKeys:'Drag each type to its column, or tap it and then tap the column (or press 1 to 4). Enter to check.',
+  correct:'Correct!', wrongWas:m=>'No. It was '+m,
+  zones:['Effective','Neutral','Resists','Immune'],
+  restDef:t=>`Nothing else has anything special against ${t}: normal damage (x1).`, restAtk:t=>`Against everything else, ${t} deals normal damage (x1).`,
+  perfect:'Perfect! 18 out of 18', okOf:n=>`${n} out of 18 right`, redHint:'The ones in red show which column they belonged in.',
+  fullTypes:'Full types', sortRowDef:'What hurts', sortRowAtk:'What gets hit by',
+  times:n=>`${n} ${n===1?'time':'times'}`, perfects:n=>`${n} perfect`,
+  neutralAtk:(a,l)=>`${a} has no special rule against ${l.join(' or ')}: normal damage (x1).`,
+  neutralDef:(l,a)=>`${l.join(' and ')} ${l.length>1?'have':'has'} no weakness or resistance to ${a}: normal damage (x1).`,
+  ofN:(a,b)=>`${a} of ${b}`,
+  yourSummary:'Your summary', summaryEmpty:'Here you will see which types you know best and which ones to review, split into when the type attacks and when it defends. Answer a few questions to get started.',
+  practiceX:n=>`Practise ${n}`, answeredN:'answered', accuracy:'accuracy', bestStreak:'best streak', bestAt:'Your best', review:'To review',
+  tapToPractice:'Tap a type to practise only that one.',
+  needMore:'Once you have answered a few more questions with each type (at least 4), your best types and the ones to review will show up.',
+  accByType:'Accuracy by type', gameOrder:'Show in game order', worstFirst:'Show worst first',
+  topFails:'Your most repeated mistakes', failedN:(e,n)=>`Missed ${e} ${e===1?'time':'times'} out of ${n}`, remember:'Remember:',
+  resetQ:'Delete your whole practice history?', resetYes:'Yes, delete', cancel:'Cancel', resetAsk:'Delete stats',
+  storeLocal:'Saved in this browser', storeLocalOnly:'Saved only in this browser', storeAccount:'Saved to your account: you will see it on any device'
+}};
+const tr=k=>(k in STR[L]?STR[L]:STR.es)[k];
+
 const TYPES = [
-  ['normal','Normal','#9FA19F'],['fire','Fuego','#E62829'],['water','Agua','#2980EF'],['electric','Eléctrico','#F2B807'],
-  ['grass','Planta','#3FA129'],['ice','Hielo','#3DC7EF'],['fighting','Lucha','#FF8000'],['poison','Veneno','#9141CB'],
-  ['ground','Tierra','#915121'],['flying','Volador','#81B9EF'],['psychic','Psíquico','#EF4179'],['bug','Bicho','#91A119'],
-  ['rock','Roca','#AFA981'],['ghost','Fantasma','#704170'],['dragon','Dragón','#5060E1'],['dark','Siniestro','#624D4E'],
-  ['steel','Acero','#60A1B8'],['fairy','Hada','#EF70EF']
-].map(([id,n,c],i)=>({id,n,c,i}));
+  ['normal','Normal','Normal','#9FA19F'],['fire','Fuego','Fire','#E62829'],['water','Agua','Water','#2980EF'],['electric','Eléctrico','Electric','#F2B807'],
+  ['grass','Planta','Grass','#3FA129'],['ice','Hielo','Ice','#3DC7EF'],['fighting','Lucha','Fighting','#FF8000'],['poison','Veneno','Poison','#9141CB'],
+  ['ground','Tierra','Ground','#915121'],['flying','Volador','Flying','#81B9EF'],['psychic','Psíquico','Psychic','#EF4179'],['bug','Bicho','Bug','#91A119'],
+  ['rock','Roca','Rock','#AFA981'],['ghost','Fantasma','Ghost','#704170'],['dragon','Dragón','Dragon','#5060E1'],['dark','Siniestro','Dark','#624D4E'],
+  ['steel','Acero','Steel','#60A1B8'],['fairy','Hada','Fairy','#EF70EF']
+].map(([id,es,en,c],i)=>({id,es,en,c,i,get n(){ return L==='en'?this.en:this.es; }}));
 const BY = Object.fromEntries(TYPES.map(t=>[t.id,t]));
 
 // atacante -> defensores
@@ -364,7 +477,7 @@ function iconSVG(t,size){
 }
 
 /* Reglas mnemotécnicas: a2 = ataca x2, a05 = ataca x0.5, d2 = recibe x2 (débil), d05 = recibe x0.5 (resiste). {tipo} se pinta como etiqueta */
-const MN = {
+const MN_ES = {
   normal:{
     a2:'No pega fuerte a nadie: es el tipo «de a pie».',
     a05:'Dar un puñetazo normal a una {rock} o a una plancha de {steel}: te duele más a ti.',
@@ -456,6 +569,108 @@ const MN = {
     d2:'La contaminación ({poison}) y el hierro frío ({steel}) destruyen a las hadas.',
     d05:'Ni el luchador ({fighting}), ni los {bug}, ni los matones ({dark}) pueden tocar algo mágico.'}
 };
+const MN_EN = {
+  normal:{
+    a2:'It hits nothing hard: it is the “everyday” type.',
+    a05:'Punch a {rock} or a {steel} plate with a normal fist: it hurts you more than it.',
+    d2:'A martial arts expert ({fighting}) knocks down any normal person.',
+    d05:'It resists nothing: a normal person has no special defences.'},
+  fire:{
+    a2:'Fire burns {grass}, melts {ice}, scorches {bug}s and melts {steel} in the forge.',
+    a05:'You cannot burn {fire} with fire, {water} puts it out, {rock} does not burn and the {dragon} breathes fire itself: it is used to it.',
+    d2:'To put out a campfire you pour {water} on it, cover it with {ground} or ring it with {rock}s.',
+    d05:'Everything thrown at it burns or melts before touching it: {grass} leaves, {ice}, {bug}s, {steel} (it melts) and more {fire}; and {fairy} types are like moths: they get singed as they come close.'},
+  water:{
+    a2:'Water puts out {fire}, turns {ground} into mud and wears down {rock} (that is how rivers carve canyons).',
+    a05:'Wetting {water} does nothing, {grass} drinks the water and it just slides off the {dragon}.',
+    d2:'Water conducts electricity ({electric}: never a hair dryer in the bath) and {grass} drinks it up.',
+    d05:'It does not care about {fire} (it puts it out), more {water}, {ice} (it melts back into water) or a {steel} anchor, which just sinks without hurting it.'},
+  electric:{
+    a2:'Current travels through {water} and lightning strikes whatever is {flying} (planes, kites, birds).',
+    a05:'Lightning against lightning ({electric}) does nothing, {grass} (wood) is a poor conductor and the {dragon} is too big for a spark.',
+    d2:'An earthquake ({ground}) knocks down the poles and cuts the power.',
+    d05:'Another {electric} shock does nothing to it, attacks from the sky ({flying}) do not scare it because lightning rules up there, and a {steel} hit just acts as a wire: the current stays intact.'},
+  grass:{
+    a2:'Plants soak up {water}, grow in {ground} and their roots crack {rock} (the roots that lift pavements).',
+    a05:'Leaves and vines do little: against {fire} they burn, against {poison} they wither, they cannot reach what is {flying}, {bug}s eat them, the {dragon} barely notices, {steel} cuts them and another {grass} just gets tickled.',
+    d2:'A plant dies from {fire}, frost ({ice}) and weedkiller ({poison}), and gets eaten by birds ({flying}) and {bug}s.',
+    d05:'Watering ({water}), the sun’s energy ({electric}), the {ground} it lives in and other {grass} only help it grow.'},
+  ice:{
+    a2:'Frost kills {grass}, freezes {ground}, stops whatever is {flying} from flapping its wings, and the {dragon}, a cold-blooded reptile, cannot stand the cold.',
+    a05:'Ice melts with {fire} and in {water}, does nothing to another {ice}, and the ice cube shatters against {steel}.',
+    d2:'Ice melts with {fire} and breaks with a karate chop ({fighting}), a thrown stone ({rock}) or a {steel} ice pick.',
+    d05:'It only resists another {ice}: ice on ice, nothing changes.'},
+  fighting:{
+    a2:'The karateka knocks down a {normal} person, breaks blocks of {ice}, {rock} bricks and {steel} plates, and gives the thugs ({dark}) what they deserve.',
+    a05:'Hitting something {poison} poisons you, you cannot reach what is {flying}, the {psychic} reads your mind and dodges, the {bug} is so small you miss it and {fairy} types are magic.',
+    d2:'The fighter is beaten by whoever attacks from the air ({flying}), whoever controls its mind ({psychic}) and {fairy} magic: muscle is useless against those.',
+    d05:'It is battle-hardened: {bug} stings do nothing, a thrown stone ({rock}) is just one more hit, and the dirty fights of {dark} thugs are its daily life.'},
+  poison:{
+    a2:'Poison is weedkiller for {grass} and taints the purity of {fairy} types.',
+    a05:'You cannot poison what is already {poison}, {ground} filters it, {rock} does not absorb it and the {ghost} is already dead.',
+    d2:'Poison gets buried under {ground} (that is how toxic waste is disposed of) and the {psychic}, like a doctor, neutralises it with the mind.',
+    d05:'Whoever touches something poisonous regrets it: the {fighting} type that punches it, the {bug} that bites it, the {grass} growing next to it, the pure {fairy} and {poison} itself.'},
+  ground:{
+    a2:'Throwing dirt puts out {fire}, earthing cancels {electric}, {poison} gets buried, and an earthquake brings down {rock} and {steel} buildings.',
+    a05:'Throwing dirt on {grass} only fertilises it, and you are giving {bug}s (worms) a home.',
+    d2:'Earth turns to mud with {water}, {grass} roots split it and {ice} freezes and cracks it.',
+    d05:'The {poison} thrown at it seeps in and disappears, and stones ({rock}) sink into it without harming it.'},
+  flying:{
+    a2:'Birds eat {grass} seeds and {bug}s, and attack the fighter ({fighting}) from above, where it cannot reach.',
+    a05:'Flying into an {electric} wire electrocutes you; into a {rock} or a {steel} building, you crash.',
+    d2:'A bird is brought down by lightning ({electric}), a hailstorm ({ice}) or a slingshot stone ({rock}).',
+    d05:'What is on the ground cannot reach it: {grass}, the {fighting} punch and {bug}s, which it even eats.'},
+  psychic:{
+    a2:'Mind beats muscle ({fighting}) and controls {poison} (medicine).',
+    a05:'Two minds ({psychic}) cancel each other out and a {steel} helmet (the tinfoil hat) blocks telepathy.',
+    d2:'The psychic is afraid of {bug}s (fear of spiders), {ghost}s and darkness ({dark}): fears the mind cannot control.',
+    d05:'It sees the {fighting} blows coming and can handle another {psychic}.'},
+  bug:{
+    a2:'Bugs eat {grass}, give the {psychic} a phobia and live in the darkness ({dark}) under stones.',
+    a05:'A bug’s attack does little: it cannot get close to {fire}, it only tickles the fighter ({fighting}), if it bites something {poison} it gets poisoned itself, it cannot reach what is {flying}, it passes through the {ghost}, it cannot bite {steel} and {fairy} magic scares it off.',
+    d2:'It burns with {fire}, in strong wind ({flying}) it cannot fly, and if you squash it with a {rock} it dies.',
+    d05:'It resists {grass} because that is its food, {fighting} because it is a fly against a human (you miss it), and {ground} because the worm lives in the earth.'},
+  rock:{
+    a2:'A stone puts out {fire} (the ring of stones around a campfire), breaks {ice}, brings down whatever is {flying} with a slingshot and squashes {bug}s.',
+    a05:'But throw a stone at the karateka ({fighting}) and they catch it, throw it at the {ground} and it sinks, and against {steel} it bounces off.',
+    d2:'Rock is worn down by {water}, split by {grass} roots, broken by the karateka ({fighting}), buried by {ground} and chipped away by a {steel} pickaxe.',
+    d05:'It takes a {normal} hit, does not burn with {fire}, {poison} cannot get in and whatever is {flying} crashes into it.'},
+  ghost:{
+    a2:'A ghost scares the mind ({psychic}), and {ghost}s can touch each other.',
+    a05:'But in the darkness ({dark}) a ghost scares no one: nobody can see it.',
+    d2:'Only another {ghost} or total darkness ({dark}) can beat a ghost.',
+    d05:'It is already dead: {poison} does nothing and {bug}s pass right through it.'},
+  dragon:{
+    a2:'Only a dragon can beat another {dragon}.',
+    a05:'The knight in {steel} armour withstands the dragon’s attack.',
+    d2:'The dragon, a cold-blooded reptile, is killed by {ice}; also by another {dragon} and by {fairy} magic (in fairy tales the dragon always loses).',
+    d05:'It masters the four elements: {fire}, {water}, {electric} and {grass} do little to it.'},
+  dark:{
+    a2:'Darkness blinds the {psychic} (it cannot see to read minds) and swallows {ghost}s.',
+    a05:'But the thug cannot beat the fighter ({fighting}), another {dark} or the light of {fairy} types.',
+    d2:'The thug is beaten by the righteous fighter ({fighting}), the {bug}s that crawl out of the dark and the light of {fairy} types.',
+    d05:'In the dark, {ghost}s and other {dark} types do not scare it.'},
+  steel:{
+    a2:'A steel pickaxe breaks {ice} and {rock}, and cold iron is what {fairy} folk fear most in legends.',
+    a05:'But a steel sword glows red and softens in {fire}, rusts in {water}, only acts as a wire for {electric}, and against another {steel} just throws sparks.',
+    d2:'The blacksmith’s forge: {fire} melts it, the fighter’s hammer blows ({fighting}) bend it and an earthquake ({ground}) topples steel buildings.',
+    d05:'It is armour, almost everything bounces off: {normal}, {grass}, {ice}, {flying}, {psychic}, {bug}, {rock}, {dragon}, {steel} and {fairy}. Tip: it is easier to memorise what it does NOT resist (water, electric, ghost and dark deal normal damage) and its 3 weaknesses.'},
+  fairy:{
+    a2:'Fairy magic beats brute force ({fighting}), the fairy-tale {dragon} and darkness ({dark}).',
+    a05:'But its magic does not work against {fire} (its wings get singed as it comes close), against {poison}, which taints it, or against iron ({steel}), its weak spot in legends.',
+    d2:'Pollution ({poison}) and cold iron ({steel}) destroy fairies.',
+    d05:'Neither the fighter ({fighting}), nor {bug}s, nor thugs ({dark}) can touch something magical.'}
+};
+const IMMN_EN = {
+  'normal>ghost':'A normal hit goes right through the {ghost}: it has no body.',
+  'fighting>ghost':'Martial arts are useless against a {ghost}: there is no body to hit.',
+  'electric>ground':'{ground} is the earth connection: electricity drains away into it.',
+  'poison>steel':'{steel} is metal: it cannot be poisoned.',
+  'ground>flying':'An earthquake does not affect whatever is {flying}: it does not touch the ground.',
+  'psychic>dark':'The mind cannot read darkness: {dark} is immune to psychic powers.',
+  'ghost>normal':'A ghost cannot touch someone {normal}: it passes right through them.',
+  'dragon>fairy':'The magic of {fairy} types completely cancels the dragon.'
+};
 
 /* estado compartido */
 const S = {drag:false, view:'circular', hover:null, sel:null, mode:'atk', show2:true, show05:true};
@@ -545,7 +760,7 @@ function buildForce(id){
   const el=document.getElementById(id), svg=d3.select(el);
   const W=900,H=760; svg.attr('viewBox',`0 0 ${W} ${H}`);
   addDefs(svg,id);
-  const nodesData=TYPES.map(t=>{const a=-Math.PI/2+t.i*2*Math.PI/18;return {...t,x:W/2+250*Math.cos(a),y:H/2+250*Math.sin(a)};});
+  const nodesData=TYPES.map(t=>{const a=-Math.PI/2+t.i*2*Math.PI/18;return Object.assign(Object.create(t),{x:W/2+250*Math.cos(a),y:H/2+250*Math.sin(a)});});
   const ND=Object.fromEntries(nodesData.map(d=>[d.id,d]));
   const links=EDGES.filter(e=>e.s!==e.t).map(e=>({source:e.s,target:e.t,m:e.m}));
   const paths=svg.append('g').selectAll('path').data(EDGES).join('path')
@@ -588,10 +803,10 @@ function buildGroups(id){
   const box=(ids,label)=>{const xs=ids.map(i=>pos[i].x),ys=ids.map(i=>pos[i].y);
     const x0=Math.min(...xs)-62,x1=Math.max(...xs)+62,y0=Math.min(...ys)-62,y1=Math.max(...ys)+62;
     svg.append('rect').attr('class','grp-bg').attr('x',x0).attr('y',y0).attr('width',x1-x0).attr('height',y1-y0).attr('rx',28);
-    svg.append('text').attr('class','grp-lab').attr('x',x0+18).attr('y',y0+22).text(label);
+    svg.append('text').attr('class','grp-lab').attr('data-k',label).attr('x',x0+18).attr('y',y0+22).text(tr(label));
     return {x:(x0+x1)/2,y:(y0+y1)/2};};
-  const cA=box(TYPES.filter(t=>!GROUP_B.has(t.id)).map(t=>t.id),'Elementos y materia');
-  const cB=box([...GROUP_B],'Cuerpo, mente y magia');
+  const cA=box(TYPES.filter(t=>!GROUP_B.has(t.id)).map(t=>t.id),'groupA');
+  const cB=box([...GROUP_B],'groupB');
   const paths=svg.append('g').selectAll('path').data(EDGES).join('path')
     .attr('class',e=>'e '+(e.m===2?'s2':'s05'))
     .attr('marker-end',e=>`url(#${id}-${e.m===2?'a2':'a05'})`)
@@ -607,7 +822,7 @@ function buildGroups(id){
 const panel=document.getElementById('panel');
 const order=ids=>ids.slice().sort((a,b)=>BY[a].i-BY[b].i);
 function chips(ids){
-  if(!ids.length) return `<div class="none">Ninguno</div>`;
+  if(!ids.length) return `<div class="none">${tr('none')}</div>`;
   return `<div class="chips">${order(ids).map(i=>`<button class="chip" data-t="${i}">${iconSVG(BY[i],20)}${BY[i].n}</button>`).join('')}</div>`;
 }
 function mnHTML(txt){ return txt.replace(/\{(\w+)\}/g,(_,id)=>`<span class="tk">${iconSVG(BY[id],15)}${BY[id].n}</span>`); }
@@ -617,27 +832,27 @@ function renderPanel(){
   const f=focusId();
   if(!f){
     const n2=EDGES.filter(e=>e.m===2).length, n05=EDGES.length-n2;
-    panel.innerHTML=`<div class="empty"><p class="big">Elige un tipo</p>
-      <p>Pasa el ratón por un círculo o tócalo para fijarlo. Aquí verás contra qué pega fuerte o flojo y qué le pega fuerte o flojo.</p>
-      <div class="stats"><div class="stat s2"><div class="v">${n2}</div><div class="k">relaciones x2</div></div>
-      <div class="stat s05"><div class="v">${n05}</div><div class="k">relaciones x0.5</div></div></div>
-      <p class="note">Las flechas que vuelven al mismo tipo son autoefectividades: Dragón y Fantasma se pegan x2 a sí mismos; Fuego, Agua, Eléctrico, Planta, Hielo, Veneno, Psíquico, Acero y Siniestro se resisten a sí mismos.</p></div>`;
+    panel.innerHTML=`<div class="empty"><p class="big">${tr('pickType')}</p>
+      <p>${tr('pickTypeP')}</p>
+      <div class="stats"><div class="stat s2"><div class="v">${n2}</div><div class="k">${tr('rel2')}</div></div>
+      <div class="stat s05"><div class="v">${n05}</div><div class="k">${tr('rel05')}</div></div></div>
+      <p class="note">${tr('selfNote')}</p></div>`;
     return;
   }
   const t=BY[f];
   const atk2=EDGES.filter(e=>e.s===f&&e.m===2).map(e=>e.t), atk05=EDGES.filter(e=>e.s===f&&e.m!==2).map(e=>e.t);
   const def2=EDGES.filter(e=>e.t===f&&e.m===2).map(e=>e.s), def05=EDGES.filter(e=>e.t===f&&e.m!==2).map(e=>e.s);
   const showA=S.mode!=='def', showD=S.mode!=='atk';
-  panel.innerHTML=`<div class="ph">${iconSVG(t,48)}<div><h2>${t.n}</h2><div class="mode">${S.sel===f?'Fijado · toca el fondo para soltar':'Vista previa'}</div></div></div>
-    <div class="sec" ${showA?'':'hidden'}><h3>Cuando ataca, hace…</h3>${row(2,atk2,S.show2,'a2',f)}${row(.5,atk05,S.show05,'a05',f)}</div>
-    <div class="sec" ${showD?'':'hidden'}><h3>Cuando defiende, recibe…</h3>${row(2,def2,S.show2,'d2',f)}${row(.5,def05,S.show05,'d05',f)}</div>
-    <p class="note">Toca un tipo de la lista para saltar a él. Cambia "Al elegir un tipo, ver" para pasar de ataque a defensa.</p>`;
+  panel.innerHTML=`<div class="ph">${iconSVG(t,48)}<div><h2>${t.n}</h2><div class="mode">${S.sel===f?tr('pinned'):tr('preview')}</div></div></div>
+    <div class="sec" ${showA?'':'hidden'}><h3>${tr('atkHead')}</h3>${row(2,atk2,S.show2,'a2',f)}${row(.5,atk05,S.show05,'a05',f)}</div>
+    <div class="sec" ${showD?'':'hidden'}><h3>${tr('defHead')}</h3>${row(2,def2,S.show2,'d2',f)}${row(.5,def05,S.show05,'d05',f)}</div>
+    <p class="note">${tr('panelNote')}</p>`;
 }
 panel.addEventListener('click',ev=>{const b=ev.target.closest('.chip');if(b){S.sel=b.dataset.t;S.hover=null;refresh();}});
 
 /* ===== Práctica ===== */
 const IMM = {normal:['ghost'],electric:['ground'],fighting:['ghost'],poison:['steel'],ground:['flying'],psychic:['dark'],ghost:['normal'],dragon:['fairy']};
-const IMMN = {
+const IMMN_ES = {
   'normal>ghost':'Un golpe normal atraviesa al {ghost}: no tiene cuerpo.',
   'fighting>ghost':'Las artes marciales no sirven contra un {ghost}: no hay cuerpo que golpear.',
   'electric>ground':'La {ground} es la toma de tierra: la electricidad se pierde en ella.',
@@ -647,10 +862,10 @@ const IMMN = {
   'ghost>normal':'Un fantasma no puede tocar a alguien {normal}: lo atraviesa.',
   'dragon>fairy':'La magia de las {fairy} anula por completo al dragón.'
 };
+let MN=L==='en'?MN_EN:MN_ES, IMMN=L==='en'?IMMN_EN:IMMN_ES;
 function mult(a,d){ if(IMM[a]&&IMM[a].includes(d)) return 0; if(SE[a]&&SE[a].includes(d)) return 2; if(NVE[a]&&NVE[a].includes(d)) return .5; return 1; }
 const effOf=(a,ds)=>ds.reduce((p,d)=>p*mult(a,d),1);
 const NUM={4:'x4',2:'x2',1:'x1',0.5:'x0.5',0.25:'x0.25',0:'x0'};
-const VERB={4:'Extremadamente eficaz',2:'Súper eficaz',1:'Normal',0.5:'Poco eficaz',0.25:'Muy poco eficaz',0:'No le afecta'};
 const IDS=TYPES.map(t=>t.id);
 const LS_ST='tipos-practica-v1', LS_SET='tipos-practica-ajustes-v1';
 function lsGet(k){try{return JSON.parse(localStorage.getItem(k)||'null');}catch(e){return null;}}
@@ -659,7 +874,7 @@ function lsSet(k,v){try{localStorage.setItem(k,JSON.stringify(v));}catch(e){}}
 const P=Object.assign({sdef:true,satk:false,sfreq:'low',mnem:'def',def:'both',focus:'',pause:'d5err',fmt:'num',extra:false,smart:true,imm:true}, lsGet(LS_SET)||{});
 let ST={total:0,ok:0,best:0,m:{},s:{}};   // s: "def:fire" -> [perfectas, veces, aciertos, casillas]
           // m: "ataque>def1+def2" -> [aciertos, intentos]
-let streak=0, Q=null, answered=false, qn=0, nextT=null, sortWorst=true, confirmReset=false, storeNote='Guardado en este navegador';
+let streak=0, Q=null, answered=false, qn=0, nextT=null, sortWorst=true, confirmReset=false, storeNote='storeLocal';
 
 function textOn(hex){const n=parseInt(hex.slice(1),16),r=(n>>16)/255,g=(n>>8&255)/255,b=(n&255)/255;return (0.299*r+0.587*g+0.114*b)>0.62?'#17181c':'#fff';}
 function pill(id){const t=BY[id];return `<span class="tpill" style="--c:${t.c};--tc:${textOn(t.c)}">${iconSVG(t,26)}${t.n}</span>`;}
@@ -693,29 +908,33 @@ function options(){
   if(!P.imm) o=o.filter(m=>m!==0);
   return o;
 }
-const label=m=>P.fmt==='verb'?VERB[m]:NUM[m];
+const label=m=>P.fmt==='verb'?tr('verb')[m]:NUM[m];
 
 function newQuestion(){
   clearTimeout(nextT); nextT=null;
   Q = Math.random()<sortChance() ? pickSort() : pickQ(); answered=false; qn++; sel=null;
+  if(Q.kind==='sort'){ place={}; IDS.forEach(id=>place[id]=1); }
+  renderQuestion();
+}
+function renderQuestion(){
   const $=id=>document.getElementById(id), isSort=Q.kind==='sort';
   $('qn').textContent=qn;
   $('qopts').hidden=isSort; $('qsort').hidden=!isSort; $('qcheck').hidden=!isSort;
   if(isSort){
     const def=Q.mode==='def';
-    $('qtitle').textContent = def ? '¿Qué le entra a este tipo?' : '¿A qué le pega este tipo?';
+    $('qtitle').textContent = def ? tr('qSortDef') : tr('qSortAtk');
     $('sideAtk').hidden=def; $('sideDef').hidden=!def; $('qvs').hidden=true;
     $(def?'qdef':'qatk').innerHTML=pill(Q.t);
-    $('qkeys').textContent = 'Arrastra cada tipo a su columna, o tócalo y después toca la columna (o pulsa 1 a 4). Intro para comprobar.';
+    $('qkeys').textContent = tr('qSortKeys');
     $('qkeys').classList.add('sorthint');
-    place={}; IDS.forEach(id=>place[id]=1); renderBoard();
+    renderBoard();
   } else {
-    $('qtitle').textContent='¿Qué efectividad tiene este ataque?';
+    $('qtitle').textContent=tr('qTitle');
     $('sideAtk').hidden=false; $('sideDef').hidden=false; $('qvs').hidden=false;
     $('qatk').innerHTML=pill(Q.att);
     $('qdef').innerHTML=Q.defs.map(pill).join('');
     $('qopts').innerHTML=options().map((m,i)=>`<button class="opt" data-m="${m}"><span class="k">${i+1}</span>${label(m)}</button>`).join('');
-    $('qkeys').textContent='Atajos: teclas 1 a 6 para responder, Intro para pasar a la siguiente.';
+    $('qkeys').textContent=tr('qKeys');
     $('qkeys').classList.remove('sorthint');
   }
   $('qfb').hidden=true;
@@ -740,7 +959,7 @@ function answer(m){
   const calc = Q.defs.length>1 ? `<div class="calc">${parts.map(p=>`<span>${mini(Q.att)} → ${mini(p.d)} <b>${NUM[p.m]}</b></span>`).join('<span>·</span>')}<span>= <b>${NUM[Q.ans]}</b></span></div>` : '';
   const lines=memo(Q.att,Q.defs);
   const fb=document.getElementById('qfb');
-  fb.innerHTML=`<div class="fbh ${right?'ok':'ko'}">${right?'¡Correcto!':'No. Era '+label(Q.ans)}</div>${calc}${lines.map(l=>`<div class="mn2">${l}</div>`).join('')}`;
+  fb.innerHTML=`<div class="fbh ${right?'ok':'ko'}">${right?tr('correct'):tr('wrongWas')(label(Q.ans))}</div>${calc}${lines.map(l=>`<div class="mn2">${l}</div>`).join('')}`;
   fb.hidden=false;
   document.getElementById('qnext').hidden=false;
   const ms = P.pause==='manual' ? 0 : P.pause==='d5' ? 5000 : P.pause==='d5err' ? (right?1200:5000) : (right?700:1500);
@@ -749,7 +968,7 @@ function answer(m){
 }
 
 /* ===== Preguntas de tipo completo: colocar los 18 tipos en su columna ===== */
-const ZONES=[{m:2,l:'Eficaz',s:'x2'},{m:1,l:'Neutro',s:'x1'},{m:.5,l:'Resiste',s:'x0.5'},{m:0,l:'Inmune',s:'x0'}];
+const ZONES=[{m:2,s:'x2'},{m:1,s:'x1'},{m:.5,s:'x0.5'},{m:0,s:'x0'}];
 let place={}, sel=null;
 function sortChance(){
   if(!P.sdef && !P.satk) return 0;
@@ -776,7 +995,7 @@ function chipHTML(id){
   return `<button class="${cls}" data-id="${id}" ${answered?'':'draggable="true"'} aria-label="${t.n}">${iconSVG(t,18)}<span>${t.n}</span>${tag}</button>`;
 }
 function renderBoard(){
-  const zone=(z,i)=>`<div class="zone${sel&&!answered?' armed':''}${z.m===0?' imm':''}" data-m="${z.m}"><div class="zh"><b>${z.l}</b><span>${z.s}</span><span class="k">${i+1}</span></div>
+  const zone=(z,i)=>`<div class="zone${sel&&!answered?' armed':''}${z.m===0?' imm':''}" data-m="${z.m}"><div class="zh"><b>${tr('zones')[i]}</b><span>${z.s}</span><span class="k">${i+1}</span></div>
     <div class="zc">${IDS.filter(id=>place[id]===z.m).map(chipHTML).join('')}</div></div>`;
   document.getElementById('qsort').innerHTML=`<div class="cols">${ZONES.slice(0,3).map(zone).join('')}</div>${zone(ZONES[3],3)}`;
 }
@@ -801,10 +1020,10 @@ function checkSort(){
     if(m===2) add(mnHTML(MN[t][Q.mode==='def'?'d2':'a2']));
     else if(m===.5) add(mnHTML(MN[t][Q.mode==='def'?'d05':'a05']));
     else if(m===0) IDS.forEach(id=>{ const k=Q.mode==='def'? id+'>'+t : t+'>'+id; if(IMMN[k]) add(mnHTML(IMMN[k])); });
-    else add(Q.mode==='def' ? `El resto no tiene nada especial contra ${mini(t)}: daño normal (x1).` : `Contra el resto, ${mini(t)} hace daño normal (x1).`);
+    else add(Q.mode==='def' ? tr('restDef')(mini(t)) : tr('restAtk')(mini(t)));
   });
   const fb=document.getElementById('qfb');
-  fb.innerHTML=`<div class="fbh ${perfect?'ok':'ko'}">${perfect?'¡Perfecto! 18 de 18':`${ok} de 18 bien`}</div>${perfect?'':'<p class="neu">Los que están en rojo indican a qué columna iban.</p>'}${lines.map(l=>`<div class="mn2">${l}</div>`).join('')}`;
+  fb.innerHTML=`<div class="fbh ${perfect?'ok':'ko'}">${perfect?tr('perfect'):tr('okOf')(ok)}</div>${perfect?'':`<p class="neu">${tr('redHint')}</p>`}${lines.map(l=>`<div class="mn2">${l}</div>`).join('')}`;
   fb.hidden=false;
   document.getElementById('qcheck').hidden=true;
   document.getElementById('qnext').hidden=false;
@@ -831,7 +1050,7 @@ function initSort(){
 function sortSummary(){
   const rows=Object.entries(ST.s||{}).map(([k,[pf,n,ok,it]])=>({k,mode:k.split(':')[0],t:k.split(':')[1],pf,n,acc:Math.round(100*ok/it)})).sort((a,b)=>a.acc-b.acc);
   if(!rows.length) return '';
-  return `<h3 class="mt">Tipos completos</h3><ul class="fails">${rows.slice(0,8).map(r=>`<li><span class="mu">${r.mode==='def'?'Qué le entra a':'A qué pega'} ${mini(r.t)}</span><b style="color:${tone(r.acc)}">${r.acc}%</b><em class="cnt">${r.n} ${r.n===1?'vez':'veces'} · ${r.pf} ${r.pf===1?'perfecta':'perfectas'}</em></li>`).join('')}</ul>`;
+  return `<h3 class="mt">${tr('fullTypes')}</h3><ul class="fails">${rows.slice(0,8).map(r=>`<li><span class="mu">${r.mode==='def'?tr('sortRowDef'):tr('sortRowAtk')} ${mini(r.t)}</span><b style="color:${tone(r.acc)}">${r.acc}%</b><em class="cnt">${tr('times')(r.n)} · ${tr('perfects')(r.pf)}</em></li>`).join('')}</ul>`;
 }
 
 /* reglas para recordar un enfrentamiento (las mismas que la ficha de cada tipo) */
@@ -847,8 +1066,8 @@ function memo(att,defs){
   }
   const neutral=parts.filter(p=>p.m===1).map(p=>p.d);
   if(neutral.length) add(P.mnem==='atk'
-    ? `${mini(att)} no tiene ninguna regla especial contra ${neutral.map(mini).join(' ni ')}: daño normal (x1).`
-    : `${neutral.map(mini).join(' y ')} no ${neutral.length>1?'tienen':'tiene'} debilidad ni resistencia a ${mini(att)}: daño normal (x1).`);
+    ? tr('neutralAtk')(mini(att),neutral.map(mini))
+    : tr('neutralDef')(neutral.map(mini),mini(att)));
   return out;
 }
 
@@ -862,29 +1081,29 @@ function agg(){
 const pct=s=>s[1]?Math.round(100*s[0]/s[1]):null;
 const tone=p=>p===null?'':p>=80?'var(--sup)':p>=55?'var(--warn)':'var(--res)';
 function bar(s){ const p=pct(s); if(p===null) return `<div class="b2 none"><span>—</span></div>`;
-  return `<div class="b2" title="${s[0]} de ${s[1]}"><i style="width:${Math.max(p,3)}%;background:${tone(p)};border-color:${tone(p)}"></i><span>${p}%<small> · ${s[1]}</small></span></div>`; }
+  return `<div class="b2" title="${tr('ofN')(s[0],s[1])}"><i style="width:${Math.max(p,3)}%;background:${tone(p)};border-color:${tone(p)}"></i><span>${p}%<small> · ${s[1]}</small></span></div>`; }
 function renderSummary(){
   const el=document.getElementById('summ');
-  if(!ST.total){ el.innerHTML=`<h2 class="sh">Tu resumen</h2><p class="muted">Aquí verás qué tipos se te dan mejor y cuáles conviene repasar, separando cuando el tipo ataca y cuando defiende. Responde unas cuantas preguntas para empezar.</p><p class="store">${storeNote}</p>`; return; }
+  if(!ST.total){ el.innerHTML=`<h2 class="sh">${tr('yourSummary')}</h2><p class="muted">${tr('summaryEmpty')}</p><p class="store">${tr(storeNote)}</p>`; return; }
   const {A,D}=agg();
   const score=id=>{const ok=A[id][0]+D[id][0], n=A[id][1]+D[id][1]; return {n, s:(ok+1)/(n+2), p:n?Math.round(100*ok/n):null};};
   const ranked=IDS.map(id=>({id,...score(id)})).filter(x=>x.n>=4).sort((a,b)=>b.s-a.s);
   const best=ranked.slice(0,3), worst=ranked.length>=6?ranked.slice(-3).reverse():[];
   const fails=Object.entries(ST.m).map(([k,[ok,n]])=>({k,err:n-ok,n})).filter(x=>x.err>0).sort((a,b)=>b.err-a.err||a.n-b.n).slice(0,6);
   const order=sortWorst ? IDS.slice().sort((a,b)=>{const sa=score(a),sb=score(b); return (sa.n?sa.s:2)-(sb.n?sb.s:2);}) : IDS;
-  const chipT=x=>`<button class="chip" data-focus="${x.id}" title="Practicar ${BY[x.id].n}">${iconSVG(BY[x.id],20)}${BY[x.id].n} <b style="color:${tone(x.p)}">${x.p}%</b></button>`;
-  el.innerHTML=`<h2 class="sh">Tu resumen</h2>
-    <div class="stats3"><div><b>${ST.total}</b><span>respondidas</span></div><div><b>${Math.round(100*ST.ok/ST.total)}%</b><span>acierto</span></div><div><b>${ST.best||0}</b><span>mejor racha</span></div></div>
-    ${ranked.length>=3?`<div class="bw"><div><h3>Se te dan mejor</h3><div class="chips">${best.map(chipT).join('')}</div></div>
-    ${worst.length?`<div><h3>A repasar</h3><div class="chips">${worst.map(chipT).join('')}</div><p class="tip">Toca un tipo para practicar solo ese.</p></div>`:''}</div>`
-    :`<p class="muted">Cuando lleves unas preguntas más con cada tipo (mínimo 4) aparecerán tus mejores tipos y los que conviene repasar.</p>`}
-    <div class="thead"><h3>Acierto por tipo</h3><button class="link" id="sortBtn">${sortWorst?'Ver en orden del juego':'Ver peores primero'}</button></div>
-    <div class="trow th"><span></span><span>Cuando ataca</span><span>Cuando defiende</span></div>
+  const chipT=x=>`<button class="chip" data-focus="${x.id}" title="${tr('practiceX')(BY[x.id].n)}">${iconSVG(BY[x.id],20)}${BY[x.id].n} <b style="color:${tone(x.p)}">${x.p}%</b></button>`;
+  el.innerHTML=`<h2 class="sh">${tr('yourSummary')}</h2>
+    <div class="stats3"><div><b>${ST.total}</b><span>${tr('answeredN')}</span></div><div><b>${Math.round(100*ST.ok/ST.total)}%</b><span>${tr('accuracy')}</span></div><div><b>${ST.best||0}</b><span>${tr('bestStreak')}</span></div></div>
+    ${ranked.length>=3?`<div class="bw"><div><h3>${tr('bestAt')}</h3><div class="chips">${best.map(chipT).join('')}</div></div>
+    ${worst.length?`<div><h3>${tr('review')}</h3><div class="chips">${worst.map(chipT).join('')}</div><p class="tip">${tr('tapToPractice')}</p></div>`:''}</div>`
+    :`<p class="muted">${tr('needMore')}</p>`}
+    <div class="thead"><h3>${tr('accByType')}</h3><button class="link" id="sortBtn">${sortWorst?tr('gameOrder'):tr('worstFirst')}</button></div>
+    <div class="trow th"><span></span><span>${tr('whenAtk')}</span><span>${tr('whenDef')}</span></div>
     ${order.map(id=>`<div class="trow"><span class="tn">${iconSVG(BY[id],18)}${BY[id].n}</span>${bar(A[id])}${bar(D[id])}</div>`).join('')}
-    ${fails.length?`<h3 class="mt">Tus fallos más repetidos</h3><ul class="fails">${fails.map(f=>{const [a,ds]=f.k.split('>');const d=ds.split('+');return `<li><span class="mu">${mini(a)} → ${d.map(mini).join(' / ')}</span><b>${NUM[effOf(a,d)]}</b><em class="cnt">Fallada ${f.err} ${f.err===1?'vez':'veces'} de ${f.n}</em>${memo(a,d).map(l=>`<div class="rec"><b>Recuerda:</b> ${l}</div>`).join('')}</li>`;}).join('')}</ul>`:''}
+    ${fails.length?`<h3 class="mt">${tr('topFails')}</h3><ul class="fails">${fails.map(f=>{const [a,ds]=f.k.split('>');const d=ds.split('+');return `<li><span class="mu">${mini(a)} → ${d.map(mini).join(' / ')}</span><b>${NUM[effOf(a,d)]}</b><em class="cnt">${tr('failedN')(f.err,f.n)}</em>${memo(a,d).map(l=>`<div class="rec"><b>${tr('remember')}</b> ${l}</div>`).join('')}</li>`;}).join('')}</ul>`:''}
     ${sortSummary()}
-    <div class="reset">${confirmReset?`<span>¿Borrar todo tu historial de práctica?</span><button class="danger" id="rsYes">Sí, borrar</button><button class="link" id="rsNo">Cancelar</button>`:`<button class="link" id="rsAsk">Borrar estadísticas</button>`}</div>
-    <p class="store">${storeNote}</p>`;
+    <div class="reset">${confirmReset?`<span>${tr('resetQ')}</span><button class="danger" id="rsYes">${tr('resetYes')}</button><button class="link" id="rsNo">${tr('cancel')}</button>`:`<button class="link" id="rsAsk">${tr('resetAsk')}</button>`}</div>
+    <p class="store">${tr(storeNote)}</p>`;
 }
 document.getElementById('summ').addEventListener('click',ev=>{
   const t=ev.target.closest('button'); if(!t) return;
@@ -903,7 +1122,7 @@ function queueSave(){ lsSet(LS_ST,toRows(ST)); if(!dbDoc) return; dirty=true; cl
 async function flush(){
   if(!dbDoc||saving||!dirty) return; saving=true; dirty=false;
   try{ await dbDoc.set(toRows(ST)); }
-  catch(e){ if(e&&(e.code==='invalid_argument'||e.code==='revoked'||e.code==='not_granted')){ dbDoc=null; storeNote='Guardado solo en este navegador'; renderSummary(); } else dirty=true; }
+  catch(e){ if(e&&(e.code==='invalid_argument'||e.code==='revoked'||e.code==='not_granted')){ dbDoc=null; storeNote='storeLocalOnly'; renderSummary(); } else dirty=true; }
   saving=false; if(dirty&&dbDoc) saveT=setTimeout(flush,3000);
 }
 async function initStore(){
@@ -918,16 +1137,14 @@ async function initStore(){
     const snap=await ref.get(); dbDoc=ref;
     if(snap.exists){ const d=fromRows(snap.data()); if(d.total>=ST.total){ ST=d; lsSet(LS_ST,toRows(ST)); } else queueSave(); }
     else if(ST.total) queueSave();
-    storeNote='Guardado en tu cuenta: lo verás en cualquier dispositivo';
+    storeNote='storeAccount';
     renderSummary();
   }catch(e){ dbDoc=null; }
 }
 
 /* ajustes */
 function initPractice(){
-  const sel=document.getElementById('pfocus');
-  sel.innerHTML=`<option value="">Todos los tipos</option>`+TYPES.map(t=>`<option value="${t.id}">${t.n}</option>`).join('');
-  sel.value=P.focus;
+  focusOptions();
   document.querySelectorAll('input[name=pdef]').forEach(r=>r.checked=r.value===P.def);
   document.querySelectorAll('input[name=ppause]').forEach(r=>r.checked=r.value===P.pause);
   document.querySelectorAll('input[name=pfmt]').forEach(r=>r.checked=r.value===P.fmt);
@@ -975,10 +1192,7 @@ function setView(v){
   document.getElementById('stage').classList.toggle('wide',v==='estatico');
   document.getElementById('modeGrp').hidden = v==='estatico' || prac;
   if(prac && !Q) newQuestion();
-  document.getElementById('hint').textContent = v==='estatico' ? 'Vista fija con todas las flechas a la vez.'
-    : v==='grupos' ? 'Distribución calculada para que se crucen las menos líneas posibles. Toca un tipo para aislar sus flechas.'
-    : v==='fuerzas' ? 'Pasa el ratón o toca un tipo para aislar sus flechas. Activa «Permitir arrastrar los tipos» arriba si quieres recolocarlos.'
-    : 'Pasa el ratón o toca un tipo para aislar sus flechas. Toca el fondo para soltarlo.';
+  setHint();
   try{history.replaceState(null,'','#'+v);}catch(e){}
   refresh();
 }
@@ -990,11 +1204,43 @@ document.querySelectorAll('#modes button').forEach(b=>b.addEventListener('click'
   S.mode=b.dataset.mode; document.querySelectorAll('#modes button').forEach(x=>x.setAttribute('aria-pressed',String(x===b))); refresh();
 }));
 
+function setHint(){
+  const v=S.view;
+  document.getElementById('hint').textContent = tr(v==='estatico'?'hintStatic':v==='grupos'?'hintGroups':v==='fuerzas'?'hintForce':'hintCircular');
+}
+function focusOptions(){
+  const sel=document.getElementById('pfocus');
+  sel.innerHTML=`<option value="">${tr('allTypes')}</option>`+TYPES.map(t=>`<option value="${t.id}">${t.n}</option>`).join('');
+  sel.value=P.focus;
+}
+/* cambio de idioma: textos fijos, nombres de los grafos y lo que se pinta con JS */
+function applyLang(){
+  document.documentElement.lang=L;
+  document.title=tr('title');
+  MN=L==='en'?MN_EN:MN_ES; IMMN=L==='en'?IMMN_EN:IMMN_ES;
+  document.querySelectorAll('[data-i18n]').forEach(el=>el.textContent=tr(el.dataset.i18n));
+  document.querySelectorAll('[data-i18n-html]').forEach(el=>el.innerHTML=tr(el.dataset.i18nHtml));
+  document.querySelectorAll('[data-i18n-aria]').forEach(el=>el.setAttribute('aria-label',tr(el.dataset.i18nAria)));
+  document.querySelectorAll('[data-lang]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.lang===L)));
+  d3.selectAll('.lab').text(d=>BY[d.id].n);
+  d3.selectAll('g.n title').text(d=>BY[d.id].n);
+  d3.selectAll('g.n').attr('aria-label',d=>BY[d.id].n);
+  d3.selectAll('.grp-lab').text(function(){ return tr(this.dataset.k); });
+}
+function setLang(l){
+  if(l===L) return;
+  L=l; try{ localStorage.setItem(LS_LANG,L); }catch(e){}
+  applyLang(); setHint(); focusOptions(); refresh(); renderSummary();
+  if(Q){ if(answered) newQuestion(); else renderQuestion(); }
+}
+document.querySelectorAll('[data-lang]').forEach(b=>b.addEventListener('click',()=>setLang(b.dataset.lang)));
+
 buildCircle('svg-circular',true);
 buildForce('svg-fuerzas');
 buildCircle('svg-estatico',false);
 buildGroups('svg-grupos');
 const h=(location.hash||'').slice(1);
+applyLang();
 initPractice();
 setView(['circular','fuerzas','estatico','grupos','practica'].includes(h)?h:'circular');
 </script>
