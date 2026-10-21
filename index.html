@@ -1,0 +1,1249 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<style>:root{color-scheme:light}body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style>
+<title>Grafo de tipos Pokémon</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;600;700&family=Atkinson+Hyperlegible:wght@400;700&display=swap">
+<style>
+/* Layout: barra de controles arriba; grafo grande a la izquierda y ficha del tipo a la derecha (se apila en móvil) */
+:root{
+  --bg:#F1F2F7; --surface:#FFFFFF; --fg:#191C26; --muted:#5A6074; --line:#D8DBE6;
+  --accent:#3543B5; --on-accent:#FFFFFF; --sup:#1E8C4C; --res:#C93838; --warn:#B7791F; --on-mark:#FFFFFF;
+  --display:"Chakra Petch","Segoe UI",system-ui,sans-serif;
+  --body:"Atkinson Hyperlegible","Segoe UI",system-ui,sans-serif;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#11131A; --surface:#1A1D27; --fg:#E7E9F1; --muted:#9BA1B4; --line:#2C3142;
+  --accent:#7C89FF; --on-accent:#0E1020; --sup:#4ACB83; --res:#FF6E6E; --warn:#F0B44C; --on-mark:#0E1020; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#11131A; --surface:#1A1D27; --fg:#E7E9F1; --muted:#9BA1B4; --line:#2C3142;
+  --accent:#7C89FF; --on-accent:#0E1020; --sup:#4ACB83; --res:#FF6E6E; --warn:#F0B44C; --on-mark:#0E1020; color-scheme:dark}
+
+html{scrollbar-gutter:stable}
+body{background:var(--bg);color:var(--fg);font-family:var(--body);font-size:15px;line-height:1.5}
+.wrap{max-width:1260px;margin:0 auto;padding-block:24px 40px;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+h1{font-family:var(--display);font-weight:700;font-size:clamp(1.6rem,3.2vw,2.3rem);margin:0;letter-spacing:.01em;text-wrap:balance}
+.sub{color:var(--muted);margin:.3rem 0 0;max-width:68ch}
+.sub b{color:var(--fg)}
+.top{display:flex;justify-content:space-between;align-items:flex-start;gap:12px 20px}
+.seg.lang{flex:none}
+.seg.lang button{padding:8px 11px}
+
+.bar{display:flex;flex-wrap:wrap;gap:12px 22px;align-items:center;margin:20px 0 14px}
+.seg{display:flex;flex-wrap:wrap;gap:3px;background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:3px}
+.seg button{font:600 .88rem/1 var(--display);letter-spacing:.02em;border:0;background:transparent;color:var(--muted);
+  padding:9px 13px;border-radius:7px;cursor:pointer;display:inline-flex;align-items:center;gap:7px}
+.seg button:hover{color:var(--fg)}
+.seg button[aria-selected="true"],.seg button[aria-pressed="true"]{background:var(--accent);color:var(--on-accent)}
+.seg.toggles button[aria-pressed="true"]{background:var(--bg);color:var(--fg);box-shadow:inset 0 0 0 1.5px var(--fg)}
+.seg.toggles button[aria-pressed="false"]{opacity:.55;text-decoration:line-through}
+[hidden]{display:none!important}
+button:focus-visible{outline:2.5px solid var(--accent);outline-offset:2px}
+.n:focus{outline:none}
+.n:focus-visible .halo{stroke:var(--accent)}
+.grp{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.lbl{font:600 .7rem var(--display);text-transform:uppercase;letter-spacing:.1em;color:var(--muted)}
+.sw{width:22px;height:0;border-top:2.5px solid;display:inline-block}
+.sw.s2{border-color:var(--sup)} .sw.s05{border-color:var(--res);border-top-style:dashed}
+
+.stage{display:grid;grid-template-columns:minmax(0,1fr) 330px;gap:16px;align-items:start}
+.stage.wide{grid-template-columns:minmax(0,1fr)}
+.stage.wide .panel{display:none}
+@media (max-width:880px){.stage{grid-template-columns:minmax(0,1fr)}}
+.graph{background:var(--surface);border:1px solid var(--line);border-radius:14px;overflow:hidden;min-width:0}
+.graph svg{display:block;width:100%;height:auto;touch-action:manipulation}
+.stage.wide .graph{max-width:960px;margin:0 auto;width:100%}
+.hint{font-size:.82rem;color:var(--muted);padding:8px 14px;border-top:1px solid var(--line)}
+
+/* aristas */
+.e{fill:none;stroke-width:1.5;opacity:.42;transition:opacity .18s,stroke-width .18s}
+.e.s2{stroke:var(--sup)} .e.s05{stroke:var(--res);stroke-dasharray:5 4}
+.e.off{display:none}
+svg.focused .e{opacity:.04}
+svg.focused .e.on{opacity:1;stroke-width:2.4}
+svg.static .e{opacity:.55}
+/* nodos */
+.n{cursor:pointer;transition:opacity .18s}
+svg.static .n{cursor:default}
+.n .disc{stroke:var(--surface);stroke-width:3}
+.n .halo{fill:none;stroke:transparent;stroke-width:2.5}
+.n.sel .halo{stroke:var(--fg)}
+.n.dim{opacity:.22}
+.lab{font:600 13px var(--display);fill:var(--fg);paint-order:stroke;stroke:var(--surface);stroke-width:4px;stroke-linejoin:round;pointer-events:none;letter-spacing:.02em}
+
+/* ficha */
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:18px;min-width:0}
+.ph{display:flex;align-items:center;gap:12px;margin-bottom:6px}
+.ph h2{font:700 1.45rem var(--display);margin:0;letter-spacing:.01em}
+.ph .mode{font-size:.82rem;color:var(--muted)}
+.sec{margin-top:16px}
+.sec h3{font:600 .72rem var(--display);text-transform:uppercase;letter-spacing:.1em;color:var(--muted);margin:0 0 8px;
+  padding-bottom:6px;border-bottom:1px solid var(--line)}
+.row{display:grid;grid-template-columns:4.2rem minmax(0,1fr);gap:8px;align-items:start;margin:8px 0}
+.mult{font:700 .85rem var(--display);padding:3px 0;border-radius:6px;text-align:center;font-variant-numeric:tabular-nums}
+.mult.s2{color:var(--sup);box-shadow:inset 0 0 0 1.5px var(--sup)}
+.mult.s05{color:var(--res);box-shadow:inset 0 0 0 1.5px var(--res)}
+.chips{display:flex;flex-wrap:wrap;gap:5px}
+.chip{display:inline-flex;align-items:center;gap:5px;font:500 .84rem var(--body);background:var(--bg);color:var(--fg);
+  border:1px solid var(--line);border-radius:99px;padding:2px 9px 2px 3px;cursor:pointer}
+.chip:hover{border-color:var(--fg)}
+.none{color:var(--muted);font-size:.85rem;padding:3px 0}
+.ico{display:inline-block;flex:none}
+.empty p{margin:.4rem 0;color:var(--muted)}
+.empty .big{font:700 1.15rem var(--display);color:var(--fg);margin:0}
+.stats{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-top:14px}
+.stat{border:1px solid var(--line);border-radius:10px;padding:10px 12px}
+.stat .v{font:700 1.6rem/1 var(--display);font-variant-numeric:tabular-nums}
+.stat .k{font-size:.8rem;color:var(--muted)}
+.stat.s2 .v{color:var(--sup)} .stat.s05 .v{color:var(--res)}
+.note{font-size:.8rem;color:var(--muted);margin-top:14px}
+.mn{margin:2px 0 10px 4.2rem;padding:8px 10px;border-radius:8px;background:var(--bg);font-size:.86rem;line-height:1.55}
+.mn::before{content:"Para recordarlo";display:block;font:600 .64rem var(--display);text-transform:uppercase;letter-spacing:.1em;color:var(--muted);margin-bottom:2px}
+@media (max-width:420px){.mn{margin-left:0}}
+html[lang="en"] .mn::before{content:"To remember"}
+html[lang="en"] .mn2::before{content:"To remember · "}
+.tk{display:inline-flex;align-items:center;gap:3px;font-weight:700;white-space:nowrap;vertical-align:-3px}
+.grp-bg{fill:var(--bg);stroke:var(--line);stroke-width:1.5}
+.grp-lab{font:600 12px var(--display);fill:var(--muted);text-transform:uppercase;letter-spacing:.12em}
+.chk{font-size:.88rem;cursor:pointer;gap:7px}
+.chk input{width:16px;height:16px;accent-color:var(--accent)}
+/* práctica */
+.pr{display:grid;grid-template-columns:240px minmax(0,1fr) 380px;gap:16px;align-items:start}
+@media (max-width:1180px){.pr{grid-template-columns:minmax(0,1fr) 380px}.prset{grid-column:1/-1}}
+@media (max-width:880px){.pr{grid-template-columns:minmax(0,1fr)}}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:18px;min-width:0}
+.prset summary{font:700 1.05rem var(--display);cursor:pointer}
+.fs{display:grid;gap:16px;margin-top:14px}
+@media (max-width:1180px){.fs{grid-template-columns:repeat(auto-fit,minmax(200px,1fr))}}
+.f{display:flex;flex-direction:column;gap:6px}
+.f label:not(.lbl){display:flex;gap:8px;align-items:flex-start;font-size:.9rem;cursor:pointer;line-height:1.35}
+.f input{accent-color:var(--accent);margin-top:2px}
+select{font:inherit;padding:7px 9px;border-radius:8px;border:1px solid var(--line);background:var(--bg);color:var(--fg)}
+.quiz{display:flex;flex-direction:column;gap:16px}
+.qhead{display:flex;justify-content:space-between;align-items:center;font-variant-numeric:tabular-nums}
+.qhead b{color:var(--fg)}
+.streak{font:600 .85rem var(--display);color:var(--muted)}
+.qtitle{font:700 1.35rem var(--display);text-align:center;margin:0;text-wrap:balance}
+.matchup{display:flex;justify-content:center;align-items:center;gap:14px 18px;flex-wrap:wrap}
+.side{display:flex;flex-direction:column;align-items:center;gap:6px}
+.side>div{display:flex;gap:6px;flex-wrap:wrap;justify-content:center}
+.vs{font:600 .95rem var(--display);color:var(--muted);padding-top:20px}
+.tpill{display:inline-flex;align-items:center;gap:8px;padding:5px 14px 5px 5px;border-radius:10px;background:var(--c);color:var(--tc);font:700 1.05rem var(--display);text-transform:uppercase;letter-spacing:.06em;box-shadow:0 0 0 2px var(--surface),0 0 0 3px var(--line)}
+.opts{display:grid;gap:8px}
+.opt{font:700 1.05rem var(--display);padding:12px;border-radius:10px;border:1.5px solid var(--line);background:var(--bg);color:var(--fg);cursor:pointer;display:flex;justify-content:center;align-items:center;gap:10px;font-variant-numeric:tabular-nums}
+.opt:hover:not(:disabled){border-color:var(--accent)}
+.opt .k{font:600 .7rem var(--body);color:var(--muted);border:1px solid var(--line);border-radius:4px;padding:0 5px}
+.opt.right{background:var(--sup);border-color:var(--sup);color:var(--on-mark)}
+.opt.wrong{background:var(--res);border-color:var(--res);color:var(--on-mark)}
+.opt.right .k,.opt.wrong .k{color:inherit;border-color:currentColor}
+.opt:disabled{cursor:default}
+.opt:disabled:not(.right):not(.wrong){opacity:.4}
+.fb{border-radius:10px;background:var(--bg);padding:12px 14px;font-size:.92rem;line-height:1.55}
+.fbh{font:700 1.1rem var(--display);margin-bottom:4px}
+.fbh.ok{color:var(--sup)} .fbh.ko{color:var(--res)}
+.calc{display:flex;flex-wrap:wrap;gap:4px 10px;font-variant-numeric:tabular-nums;margin:4px 0 8px;color:var(--muted)}
+.calc b{color:var(--fg)}
+.mn2{margin:6px 0}
+.mn2::before{content:"Para recordarlo · ";font:600 .66rem var(--display);text-transform:uppercase;letter-spacing:.1em;color:var(--muted)}
+.neu{margin:6px 0 0;color:var(--muted)}
+.qfoot{display:flex;align-items:center;gap:12px;min-height:38px}
+.timer{height:4px;background:var(--line);border-radius:4px;overflow:hidden;flex:1}
+.timer i{display:block;height:100%;width:0;background:var(--accent)}
+.primary{font:600 .9rem var(--display);background:var(--accent);color:var(--on-accent);border:0;border-radius:8px;padding:9px 18px;cursor:pointer}
+.keys{font-size:.78rem;color:var(--muted);margin:0;text-align:center}
+@media (hover:none){.keys:not(.sorthint),.opt .k,.zh .k{display:none}}
+.sh{font:700 1.2rem var(--display);margin:0 0 10px}
+.muted{color:var(--muted)}
+.stats3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.stats3>div{border:1px solid var(--line);border-radius:10px;padding:9px 11px;display:flex;flex-direction:column}
+.stats3 b{font:700 1.45rem/1.1 var(--display);font-variant-numeric:tabular-nums}
+.stats3 span{font-size:.78rem;color:var(--muted)}
+.summ h3{font:600 .72rem var(--display);text-transform:uppercase;letter-spacing:.1em;color:var(--muted);margin:16px 0 8px}
+.bw .tip{font-size:.78rem;color:var(--muted);margin:6px 0 0}
+.thead{display:flex;justify-content:space-between;align-items:baseline;gap:8px;border-bottom:1px solid var(--line);margin-top:16px}
+.thead h3{margin:0 0 6px}
+.link{background:none;border:0;color:var(--accent);font:600 .82rem var(--body);cursor:pointer;padding:4px 0}
+.trow{display:grid;grid-template-columns:7.6rem minmax(0,1fr) minmax(0,1fr);gap:8px;align-items:center;padding:3px 0}
+.trow.th{font:600 .66rem var(--display);text-transform:uppercase;letter-spacing:.08em;color:var(--muted);padding-top:8px}
+.tn{display:inline-flex;align-items:center;gap:6px;font-size:.88rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.b2{position:relative;height:20px;border-radius:5px;background:var(--bg);overflow:hidden}
+.b2 i{position:absolute;inset:0 auto 0 0;opacity:.32;border-radius:5px;border-right:3px solid}
+.b2 span{position:relative;font:600 .74rem/20px var(--display);padding-left:7px;font-variant-numeric:tabular-nums;color:var(--fg)}
+.b2 small{font-weight:500;color:var(--muted)}
+.b2.none span{color:var(--muted)}
+.fails{list-style:none;margin:0;padding:0;display:grid;gap:6px}
+.fails li{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:2px 10px;align-items:center;font-size:.88rem;padding:6px 0;border-bottom:1px solid var(--line)}
+.fails .mu{display:flex;flex-wrap:wrap;align-items:center;gap:2px 6px}
+.fails .cnt{grid-column:1/-1;color:var(--muted);font-size:.76rem;font-style:normal}
+.fails .rec{grid-column:1/-1;font-size:.84rem;line-height:1.5;background:var(--bg);border-radius:8px;padding:6px 9px;margin-top:4px}
+.fails .rec>b{font:600 .7rem var(--display);text-transform:uppercase;letter-spacing:.08em;color:var(--muted)}
+.reset{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin-top:16px;font-size:.88rem}
+.danger{background:var(--res);color:var(--on-mark);border:0;border-radius:7px;padding:6px 12px;font:600 .82rem var(--body);cursor:pointer}
+.store{font-size:.76rem;color:var(--muted);margin:10px 0 0}
+.hintf{font-size:.78rem;color:var(--muted);margin:2px 0 0}
+.board{display:flex;flex-direction:column;gap:8px}
+.cols{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.zone{border:1.5px dashed var(--line);border-radius:10px;padding:8px;min-height:64px;display:flex;flex-direction:column;gap:6px;min-width:0;transition:border-color .15s,background .15s}
+.zone.armed{cursor:pointer;border-color:var(--accent)}
+.zone.over{border-style:solid;border-color:var(--accent);background:var(--bg)}
+.zh{display:flex;align-items:baseline;gap:6px;font:700 .9rem var(--display)}
+.zh span{font-weight:600;color:var(--muted);font-size:.8rem}
+.zh .k{margin-left:auto;font:600 .66rem var(--body);border:1px solid var(--line);border-radius:4px;padding:0 5px}
+.zone[data-m="2"] .zh b{color:var(--sup)} .zone[data-m="0.5"] .zh b{color:var(--res)}
+.zc{display:flex;flex-wrap:wrap;gap:5px;align-content:flex-start;min-height:30px}
+.zone.imm .zc{min-height:30px}
+.sc{display:inline-flex;align-items:center;gap:4px;font:600 .78rem var(--body);background:var(--bg);color:var(--fg);border:1.5px solid var(--line);border-radius:99px;padding:2px 8px 2px 2px;cursor:grab;max-width:100%;touch-action:manipulation}
+.sc span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.sc.sel{border-color:var(--accent);box-shadow:0 0 0 2px var(--accent)}
+.sc.good{border-color:var(--sup);cursor:default}
+.sc.bad{border-color:var(--res);background:var(--surface);cursor:default}
+.sc .fix{color:var(--res);font-weight:700}
+@media (max-width:480px){.sc{font-size:.72rem}.cols{gap:5px}.zone{padding:6px}}
+@media (prefers-reduced-motion:reduce){.e,.n{transition:none}.timer i{transition:none!important}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <div>
+      <h1 data-i18n="title">Grafo de tipos Pokémon</h1>
+      <p class="sub" data-i18n-html="sub"></p>
+    </div>
+    <div class="seg lang" role="group" aria-label="Idioma / Language">
+      <button data-lang="es" aria-pressed="true" lang="es" title="Español">ES</button>
+      <button data-lang="en" aria-pressed="false" lang="en" title="English">EN</button>
+    </div>
+  </header>
+
+  <div class="bar">
+    <div class="seg" role="tablist" data-i18n-aria="viewAria">
+      <button role="tab" id="tab-circular" data-view="circular" aria-selected="true" data-i18n="tabCircular"></button>
+      <button role="tab" id="tab-fuerzas" data-view="fuerzas" aria-selected="false" data-i18n="tabForce"></button>
+      <button role="tab" id="tab-estatico" data-view="estatico" aria-selected="false" data-i18n="tabStatic" hidden></button>
+      <button role="tab" id="tab-grupos" data-view="grupos" aria-selected="false" data-i18n="tabGroups"></button>
+      <button role="tab" id="tab-practica" data-view="practica" aria-selected="false" data-i18n="tabPractice"></button>
+    </div>
+    <div class="grp" id="showGrp">
+      <span class="lbl" data-i18n="show"></span>
+      <div class="seg toggles">
+        <button id="t2" aria-pressed="true"><span class="sw s2"></span>x2</button>
+        <button id="t05" aria-pressed="true"><span class="sw s05"></span>x0.5</button>
+      </div>
+    </div>
+    <div class="grp" id="modeGrp">
+      <span class="lbl" data-i18n="modeLbl"></span>
+      <div class="seg" id="modes">
+        <button data-mode="atk" aria-pressed="true" data-i18n="whenAtk"></button>
+        <button data-mode="def" aria-pressed="false" data-i18n="whenDef"></button>
+        <button data-mode="both" aria-pressed="false" data-i18n="both"></button>
+      </div>
+    </div>
+    <label class="grp chk" id="dragGrp" hidden><input type="checkbox" id="dragChk"> <span data-i18n="allowDrag"></span></label>
+  </div>
+
+  <div class="stage" id="stage">
+    <div class="graph">
+      <svg id="svg-circular" role="img" data-i18n-aria="ariaCircular"></svg>
+      <svg id="svg-fuerzas" role="img" data-i18n-aria="ariaForce" hidden></svg>
+      <svg id="svg-estatico" role="img" data-i18n-aria="ariaStatic" hidden></svg>
+      <svg id="svg-grupos" role="img" data-i18n-aria="ariaGroups" hidden></svg>
+      <div class="hint" id="hint"></div>
+    </div>
+    <aside class="panel" id="panel" aria-live="polite"></aside>
+  </div>
+
+  <section class="pr" id="practice" hidden>
+    <details class="card prset" id="prset" open>
+      <summary data-i18n="settings"></summary>
+      <div class="fs">
+        <div class="f"><span class="lbl" data-i18n="sDefType"></span>
+          <label><input type="radio" name="pdef" value="mono"> <span data-i18n="sMono"></span></label>
+          <label><input type="radio" name="pdef" value="dual"> <span data-i18n="sDual"></span></label>
+          <label><input type="radio" name="pdef" value="both"> <span data-i18n="both"></span></label></div>
+        <div class="f"><label class="lbl" for="pfocus" data-i18n="sFocus"></label><select id="pfocus"></select></div>
+        <div class="f"><span class="lbl" data-i18n="sPause"></span>
+          <label><input type="radio" name="ppause" value="d5"> <span data-i18n="sP5"></span></label>
+          <label><input type="radio" name="ppause" value="d5err"> <span data-i18n="sP5err"></span></label>
+          <label><input type="radio" name="ppause" value="none"> <span data-i18n="sPnone"></span></label>
+          <label><input type="radio" name="ppause" value="manual"> <span data-i18n="sPmanual"></span></label></div>
+        <div class="f"><span class="lbl" data-i18n="sAnswers"></span>
+          <label><input type="radio" name="pfmt" value="num"> <span data-i18n="sNum"></span></label>
+          <label><input type="radio" name="pfmt" value="verb"> <span data-i18n="sVerb"></span></label>
+          <label><input type="checkbox" id="pextra"> <span data-i18n="sExtra"></span></label>
+          <label><input type="checkbox" id="pimm"> <span data-i18n="sImm"></span></label>
+          <label><input type="checkbox" id="psmart"> <span data-i18n="sSmart"></span></label></div>
+        <div class="f"><span class="lbl" data-i18n="sMnem"></span>
+          <label><input type="radio" name="pmnem" value="def"> <span data-i18n="sMnDef"></span></label>
+          <label><input type="radio" name="pmnem" value="atk"> <span data-i18n="sMnAtk"></span></label>
+          <label><input type="radio" name="pmnem" value="both"> <span data-i18n="sMnBoth"></span></label></div>
+        <div class="f"><span class="lbl" data-i18n="sSort"></span>
+          <label><input type="checkbox" id="psdef"> <span data-i18n="sSortDef"></span></label>
+          <label><input type="checkbox" id="psatk"> <span data-i18n="sSortAtk"></span></label>
+          <label class="lbl" for="psfreq" data-i18n="sFreq"></label>
+          <select id="psfreq"><option value="low" data-i18n="sFlow"></option><option value="mid" data-i18n="sFmid"></option><option value="high" data-i18n="sFhigh"></option></select>
+          <p class="hintf" data-i18n="sHint"></p></div>
+      </div>
+    </details>
+    <div class="card quiz">
+      <div class="qhead"><span class="lbl"><span data-i18n="question"></span> <b id="qn">1</b></span><span class="streak"><span data-i18n="streak"></span> <b id="qstreak">0</b></span></div>
+      <h2 class="qtitle" id="qtitle"></h2>
+      <div class="matchup">
+        <div class="side" id="sideAtk"><span class="lbl" data-i18n="attacks"></span><div id="qatk"></div></div>
+        <span class="vs" id="qvs" data-i18n="vs"></span>
+        <div class="side" id="sideDef"><span class="lbl" data-i18n="defends"></span><div id="qdef"></div></div>
+      </div>
+      <div class="opts" id="qopts"></div>
+      <div class="board" id="qsort" hidden></div>
+      <div class="fb" id="qfb" aria-live="polite" hidden></div>
+      <div class="qfoot"><div class="timer" id="qtimer"><i></i></div><button class="primary" id="qcheck" hidden data-i18n="check"></button><button class="primary" id="qnext" hidden data-i18n="next"></button></div>
+      <p class="keys" id="qkeys"></p>
+    </div>
+    <div class="card summ" id="summ"></div>
+  </section>
+  <footer class="note" style="text-align:center;margin:28px 0 8px" data-i18n="footer"></footer>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.9.0/d3.min.js"></script>
+<script>
+/* idioma: 'es' o 'en'. Se guarda en el navegador; si no hay nada guardado se usa el del navegador */
+const LS_LANG='tipos-idioma';
+let L=(()=>{ try{ const v=localStorage.getItem(LS_LANG); if(v==='es'||v==='en') return v; }catch(e){} return /^es\b/i.test(navigator.language||'')?'es':'en'; })();
+const STR={
+es:{
+  title:'Grafo de tipos Pokémon',
+  sub:'Tabla de los juegos principales (generación 6 en adelante, con Hada). Cada flecha va del tipo que <b>ataca</b> al que <b>defiende</b>: verde continua = <b>x2</b>, roja discontinua = <b>x0.5</b>. Las inmunidades (x0) no aparecen.',
+  viewAria:'Vista', tabCircular:'Circular interactivo', tabForce:'Fuerzas', tabStatic:'Circular estático', tabGroups:'Por grupos', tabPractice:'Práctica',
+  show:'Mostrar', modeLbl:'Al elegir un tipo, ver', whenAtk:'Cuando ataca', whenDef:'Cuando defiende', both:'Ambos', allowDrag:'Permitir arrastrar los tipos',
+  ariaCircular:'Grafo circular de efectividades', ariaForce:'Grafo de fuerzas de efectividades', ariaStatic:'Grafo circular estático de efectividades', ariaGroups:'Grafo por grupos con menos cruces',
+  hintStatic:'Vista fija con todas las flechas a la vez.',
+  hintGroups:'Distribución calculada para que se crucen las menos líneas posibles. Toca un tipo para aislar sus flechas.',
+  hintForce:'Pasa el ratón o toca un tipo para aislar sus flechas. Activa «Permitir arrastrar los tipos» arriba si quieres recolocarlos.',
+  hintCircular:'Pasa el ratón o toca un tipo para aislar sus flechas. Toca el fondo para soltarlo.',
+  groupA:'Elementos y materia', groupB:'Cuerpo, mente y magia',
+  settings:'Ajustes', sDefType:'Tipo defensor', sMono:'Un solo tipo', sDual:'Doble tipo', sFocus:'Centrarse en un tipo', allTypes:'Todos los tipos',
+  sPause:'Pausa entre preguntas', sP5:'5 segundos', sP5err:'5 segundos solo si fallo', sPnone:'Sin pausa', sPmanual:'Avanzar a mano',
+  sAnswers:'Respuestas', sNum:'Números (x2)', sVerb:'Palabras (Súper eficaz)', sExtra:'x4 y x0.25 también en preguntas de un tipo', sImm:'Incluir inmunidades (x0)', sSmart:'Repaso inteligente: pregunta más lo que fallo',
+  sMnem:'Reglas para recordar', sMnDef:'Desde el que defiende: qué le entra y qué aguanta', sMnAtk:'Desde el que ataca: a qué pega fuerte o flojo', sMnBoth:'Las dos',
+  sSort:'Preguntas de tipo completo', sSortDef:'Qué le entra a un tipo (defensa)', sSortAtk:'A qué pega un tipo (ataque)', sFreq:'Frecuencia',
+  sFlow:'Pocas (1 de cada 10)', sFmid:'Algunas (1 de cada 5)', sFhigh:'Muchas (1 de cada 3)',
+  sHint:'Con el repaso inteligente salen más si las fallas y menos si las dominas, y se eligen antes los tipos que más te cuestan.',
+  question:'Pregunta', streak:'Racha', attacks:'Ataca', vs:'contra', defends:'Defiende', check:'Comprobar', next:'Siguiente',
+  footer:'Proyecto fan sin ánimo de lucro. Pokémon y los nombres de los tipos son marcas de Nintendo, Game Freak y The Pokémon Company.',
+  none:'Ninguno', pickType:'Elige un tipo',
+  pickTypeP:'Pasa el ratón por un círculo o tócalo para fijarlo. Aquí verás contra qué pega fuerte o flojo y qué le pega fuerte o flojo.',
+  rel2:'relaciones x2', rel05:'relaciones x0.5',
+  selfNote:'Las flechas que vuelven al mismo tipo son autoefectividades: Dragón y Fantasma se pegan x2 a sí mismos; Fuego, Agua, Eléctrico, Planta, Hielo, Veneno, Psíquico, Acero y Siniestro se resisten a sí mismos.',
+  pinned:'Fijado · toca el fondo para soltar', preview:'Vista previa', atkHead:'Cuando ataca, hace…', defHead:'Cuando defiende, recibe…',
+  panelNote:'Toca un tipo de la lista para saltar a él. Cambia "Al elegir un tipo, ver" para pasar de ataque a defensa.',
+  verb:{4:'Extremadamente eficaz',2:'Súper eficaz',1:'Normal',0.5:'Poco eficaz',0.25:'Muy poco eficaz',0:'No le afecta'},
+  qTitle:'¿Qué efectividad tiene este ataque?', qSortDef:'¿Qué le entra a este tipo?', qSortAtk:'¿A qué le pega este tipo?',
+  qKeys:'Atajos: teclas 1 a 6 para responder, Intro para pasar a la siguiente.',
+  qSortKeys:'Arrastra cada tipo a su columna, o tócalo y después toca la columna (o pulsa 1 a 4). Intro para comprobar.',
+  correct:'¡Correcto!', wrongWas:m=>'No. Era '+m,
+  zones:['Eficaz','Neutro','Resiste','Inmune'],
+  restDef:t=>`El resto no tiene nada especial contra ${t}: daño normal (x1).`, restAtk:t=>`Contra el resto, ${t} hace daño normal (x1).`,
+  perfect:'¡Perfecto! 18 de 18', okOf:n=>`${n} de 18 bien`, redHint:'Los que están en rojo indican a qué columna iban.',
+  fullTypes:'Tipos completos', sortRowDef:'Qué le entra a', sortRowAtk:'A qué pega',
+  times:n=>`${n} ${n===1?'vez':'veces'}`, perfects:n=>`${n} ${n===1?'perfecta':'perfectas'}`,
+  neutralAtk:(a,l)=>`${a} no tiene ninguna regla especial contra ${l.join(' ni ')}: daño normal (x1).`,
+  neutralDef:(l,a)=>`${l.join(' y ')} no ${l.length>1?'tienen':'tiene'} debilidad ni resistencia a ${a}: daño normal (x1).`,
+  ofN:(a,b)=>`${a} de ${b}`,
+  yourSummary:'Tu resumen', summaryEmpty:'Aquí verás qué tipos se te dan mejor y cuáles conviene repasar, separando cuando el tipo ataca y cuando defiende. Responde unas cuantas preguntas para empezar.',
+  practiceX:n=>`Practicar ${n}`, answeredN:'respondidas', accuracy:'acierto', bestStreak:'mejor racha', bestAt:'Se te dan mejor', review:'A repasar',
+  tapToPractice:'Toca un tipo para practicar solo ese.',
+  needMore:'Cuando lleves unas preguntas más con cada tipo (mínimo 4) aparecerán tus mejores tipos y los que conviene repasar.',
+  accByType:'Acierto por tipo', gameOrder:'Ver en orden del juego', worstFirst:'Ver peores primero',
+  topFails:'Tus fallos más repetidos', failedN:(e,n)=>`Fallada ${e} ${e===1?'vez':'veces'} de ${n}`, remember:'Recuerda:',
+  resetQ:'¿Borrar todo tu historial de práctica?', resetYes:'Sí, borrar', cancel:'Cancelar', resetAsk:'Borrar estadísticas',
+  storeLocal:'Guardado en este navegador', storeLocalOnly:'Guardado solo en este navegador', storeAccount:'Guardado en tu cuenta: lo verás en cualquier dispositivo'
+},
+en:{
+  title:'Pokémon type chart graph',
+  sub:'Chart for the main series games (generation 6 onwards, with Fairy). Each arrow goes from the <b>attacking</b> type to the <b>defending</b> one: solid green = <b>x2</b>, dashed red = <b>x0.5</b>. Immunities (x0) are not shown.',
+  viewAria:'View', tabCircular:'Interactive circle', tabForce:'Force layout', tabStatic:'Static circle', tabGroups:'By groups', tabPractice:'Practice',
+  show:'Show', modeLbl:'When picking a type, show', whenAtk:'When attacking', whenDef:'When defending', both:'Both', allowDrag:'Allow dragging the types',
+  ariaCircular:'Circular type effectiveness graph', ariaForce:'Force-directed type effectiveness graph', ariaStatic:'Static circular type effectiveness graph', ariaGroups:'Grouped graph with fewer crossings',
+  hintStatic:'Fixed view with every arrow at once.',
+  hintGroups:'Layout computed so that as few lines as possible cross. Tap a type to isolate its arrows.',
+  hintForce:'Hover or tap a type to isolate its arrows. Turn on “Allow dragging the types” above if you want to move them around.',
+  hintCircular:'Hover or tap a type to isolate its arrows. Tap the background to release it.',
+  groupA:'Elements and matter', groupB:'Body, mind and magic',
+  settings:'Settings', sDefType:'Defending type', sMono:'Single type', sDual:'Dual type', sFocus:'Focus on a type', allTypes:'All types',
+  sPause:'Pause between questions', sP5:'5 seconds', sP5err:'5 seconds only when wrong', sPnone:'No pause', sPmanual:'Advance manually',
+  sAnswers:'Answers', sNum:'Numbers (x2)', sVerb:'Words (Super effective)', sExtra:'x4 and x0.25 also in single-type questions', sImm:'Include immunities (x0)', sSmart:'Smart review: ask more of what I get wrong',
+  sMnem:'Memory rules', sMnDef:'From the defender: what hurts it and what it shrugs off', sMnAtk:'From the attacker: what it hits hard or weakly', sMnBoth:'Both',
+  sSort:'Full-type questions', sSortDef:'What hurts a type (defence)', sSortAtk:'What a type hits (attack)', sFreq:'Frequency',
+  sFlow:'Few (1 in 10)', sFmid:'Some (1 in 5)', sFhigh:'Many (1 in 3)',
+  sHint:'With smart review they show up more if you get them wrong and less once you master them, and the types you struggle with come first.',
+  question:'Question', streak:'Streak', attacks:'Attacks', vs:'vs', defends:'Defends', check:'Check', next:'Next',
+  footer:'Non-profit fan project. Pokémon and the type names are trademarks of Nintendo, Game Freak and The Pokémon Company.',
+  none:'None', pickType:'Pick a type',
+  pickTypeP:'Hover over a circle or tap it to pin it. Here you will see what it hits hard or weakly and what hits it hard or weakly.',
+  rel2:'x2 matchups', rel05:'x0.5 matchups',
+  selfNote:'Arrows that loop back to the same type are self-matchups: Dragon and Ghost hit themselves x2; Fire, Water, Electric, Grass, Ice, Poison, Psychic, Steel and Dark resist themselves.',
+  pinned:'Pinned · tap the background to release', preview:'Preview', atkHead:'When attacking, it deals…', defHead:'When defending, it takes…',
+  panelNote:'Tap a type in the list to jump to it. Change “When picking a type, show” to switch between attack and defence.',
+  verb:{4:'Extremely effective',2:'Super effective',1:'Normal',0.5:'Not very effective',0.25:'Barely effective',0:'No effect'},
+  qTitle:'How effective is this attack?', qSortDef:'What hurts this type?', qSortAtk:'What does this type hit?',
+  qKeys:'Shortcuts: keys 1 to 6 to answer, Enter for the next one.',
+  qSortKeys:'Drag each type to its column, or tap it and then tap the column (or press 1 to 4). Enter to check.',
+  correct:'Correct!', wrongWas:m=>'No. It was '+m,
+  zones:['Effective','Neutral','Resists','Immune'],
+  restDef:t=>`Nothing else has anything special against ${t}: normal damage (x1).`, restAtk:t=>`Against everything else, ${t} deals normal damage (x1).`,
+  perfect:'Perfect! 18 out of 18', okOf:n=>`${n} out of 18 right`, redHint:'The ones in red show which column they belonged in.',
+  fullTypes:'Full types', sortRowDef:'What hurts', sortRowAtk:'What gets hit by',
+  times:n=>`${n} ${n===1?'time':'times'}`, perfects:n=>`${n} perfect`,
+  neutralAtk:(a,l)=>`${a} has no special rule against ${l.join(' or ')}: normal damage (x1).`,
+  neutralDef:(l,a)=>`${l.join(' and ')} ${l.length>1?'have':'has'} no weakness or resistance to ${a}: normal damage (x1).`,
+  ofN:(a,b)=>`${a} of ${b}`,
+  yourSummary:'Your summary', summaryEmpty:'Here you will see which types you know best and which ones to review, split into when the type attacks and when it defends. Answer a few questions to get started.',
+  practiceX:n=>`Practise ${n}`, answeredN:'answered', accuracy:'accuracy', bestStreak:'best streak', bestAt:'Your best', review:'To review',
+  tapToPractice:'Tap a type to practise only that one.',
+  needMore:'Once you have answered a few more questions with each type (at least 4), your best types and the ones to review will show up.',
+  accByType:'Accuracy by type', gameOrder:'Show in game order', worstFirst:'Show worst first',
+  topFails:'Your most repeated mistakes', failedN:(e,n)=>`Missed ${e} ${e===1?'time':'times'} out of ${n}`, remember:'Remember:',
+  resetQ:'Delete your whole practice history?', resetYes:'Yes, delete', cancel:'Cancel', resetAsk:'Delete stats',
+  storeLocal:'Saved in this browser', storeLocalOnly:'Saved only in this browser', storeAccount:'Saved to your account: you will see it on any device'
+}};
+const tr=k=>(k in STR[L]?STR[L]:STR.es)[k];
+
+const TYPES = [
+  ['normal','Normal','Normal','#9FA19F'],['fire','Fuego','Fire','#E62829'],['water','Agua','Water','#2980EF'],['electric','Eléctrico','Electric','#F2B807'],
+  ['grass','Planta','Grass','#3FA129'],['ice','Hielo','Ice','#3DC7EF'],['fighting','Lucha','Fighting','#FF8000'],['poison','Veneno','Poison','#9141CB'],
+  ['ground','Tierra','Ground','#915121'],['flying','Volador','Flying','#81B9EF'],['psychic','Psíquico','Psychic','#EF4179'],['bug','Bicho','Bug','#91A119'],
+  ['rock','Roca','Rock','#AFA981'],['ghost','Fantasma','Ghost','#704170'],['dragon','Dragón','Dragon','#5060E1'],['dark','Siniestro','Dark','#624D4E'],
+  ['steel','Acero','Steel','#60A1B8'],['fairy','Hada','Fairy','#EF70EF']
+].map(([id,es,en,c],i)=>({id,es,en,c,i,get n(){ return L==='en'?this.en:this.es; }}));
+const BY = Object.fromEntries(TYPES.map(t=>[t.id,t]));
+
+// atacante -> defensores
+const SE = {
+  fire:['grass','ice','bug','steel'], water:['fire','ground','rock'], electric:['water','flying'],
+  grass:['water','ground','rock'], ice:['grass','ground','flying','dragon'],
+  fighting:['normal','ice','rock','dark','steel'], poison:['grass','fairy'],
+  ground:['fire','electric','poison','rock','steel'], flying:['grass','fighting','bug'],
+  psychic:['fighting','poison'], bug:['grass','psychic','dark'], rock:['fire','ice','flying','bug'],
+  ghost:['psychic','ghost'], dragon:['dragon'], dark:['psychic','ghost'], steel:['ice','rock','fairy'],
+  fairy:['fighting','dragon','dark']
+};
+const NVE = {
+  normal:['rock','steel'], fire:['fire','water','rock','dragon'], water:['water','grass','dragon'],
+  electric:['electric','grass','dragon'], grass:['fire','grass','poison','flying','bug','dragon','steel'],
+  ice:['fire','water','ice','steel'], fighting:['poison','flying','psychic','bug','fairy'],
+  poison:['poison','ground','rock','ghost'], ground:['grass','bug'], flying:['electric','rock','steel'],
+  psychic:['psychic','steel'], bug:['fire','fighting','poison','flying','ghost','steel','fairy'],
+  rock:['fighting','ground','steel'], ghost:['dark'], dragon:['steel'], dark:['fighting','dark','fairy'],
+  steel:['fire','water','electric','steel'], fairy:['fire','poison','steel']
+};
+const EDGES = [];
+for (const [s,a] of Object.entries(SE)) a.forEach(t=>EDGES.push({s,t,m:2}));
+for (const [s,a] of Object.entries(NVE)) a.forEach(t=>EDGES.push({s,t,m:0.5}));
+
+/* Iconos propios: círculo del color del tipo con un glifo sencillo en blanco (caja 24x24) */
+function star(n,ro,ri,cx=12,cy=12,rot=-Math.PI/2){
+  const p=[]; for(let k=0;k<2*n;k++){const r=k%2?ri:ro,a=rot+k*Math.PI/n;p.push((cx+r*Math.cos(a)).toFixed(2)+','+(cy+r*Math.sin(a)).toFixed(2));}
+  return p.join(' ');
+}
+function glyph(id,c){
+  const W='#fff';
+  switch(id){
+    case 'normal': return `<circle cx="12" cy="12" r="6.2" fill="none" stroke="${W}" stroke-width="3.2"/>`;
+    case 'fire': return `<path fill="${W}" d="M12 2c1 4 6.5 6 6.5 12a6.5 6.5 0 0 1-13 0c0-3 1.8-5.2 3.2-6.3 0 2 .9 3.3 2.1 3.6C10.6 8.200 10.300 5 12 2z"/>`;
+    case 'water': return `<path fill="${W}" d="M12 2.5c3.6 5 6.2 8.3 6.2 11.7a6.2 6.2 0 0 1-12.4 0c0-3.4 2.6-6.7 6.2-11.7z"/>`;
+    case 'electric': return `<path fill="${W}" d="M13.8 2 5 13.6h5.6L9.4 22 19 9.8h-5.7z"/>`;
+    case 'grass': return `<path fill="${W}" d="M4.5 19.5C4.5 10.5 10.5 4.8 20 4c-.8 9.500-6.500 15.500-15.500 15.500z"/><path d="M5.500 18.500 13.500 10.500" stroke="${c}" stroke-width="1.8" stroke-linecap="round"/>`;
+    case 'ice': return `<g stroke="${W}" stroke-width="2.4" stroke-linecap="round">${[0,60,120].map(a=>`<line x1="12" y1="3" x2="12" y2="21" transform="rotate(${a} 12 12)"/>`).join('')}</g><circle cx="12" cy="12" r="2.6" fill="${W}"/>`;
+    case 'fighting': return `<polygon fill="${W}" points="${star(8,10,4.6)}"/>`;
+    case 'poison': return `<circle cx="9.5" cy="14.5" r="5.300" fill="${W}"/><circle cx="16.5" cy="7.500" r="3.400" fill="${W}"/><circle cx="18" cy="16.5" r="2" fill="${W}"/>`;
+    case 'ground': return `<g fill="${W}"><rect x="3" y="5.500" width="18" height="3.400" rx="1.700"/><rect x="5.500" y="10.500" width="13" height="3.400" rx="1.700"/><rect x="8" y="15.500" width="8" height="3.400" rx="1.700"/></g>`;
+    case 'flying': return `<path fill="${W}" d="M20 3.500C12 4 6.500 9 5.500 16.800L4.200 21l2.300-1.200c.9-2.800 2.400-5 4.300-6.800h3.700l-2-1.800 3.900-1.300-1.800-1.700c2.300-1.100 4.300-3 5.400-4.700z"/>`;
+    case 'psychic': return `<path fill="${W}" d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3.400" fill="${c}"/><circle cx="12" cy="12" r="1.400" fill="${W}"/>`;
+    case 'bug': return `<g stroke="${W}" stroke-width="1.800" stroke-linecap="round"><line x1="10" y1="8" x2="7" y2="3"/><line x1="14" y1="8" x2="17" y2="3"/></g><ellipse cx="12" cy="14.500" rx="5.600" ry="6.800" fill="${W}"/><line x1="12" y1="9" x2="12" y2="20.500" stroke="${c}" stroke-width="1.600"/>`;
+    case 'rock': return `<polygon fill="${W}" points="3.500,15.500 7,6 14,3 20.500,9 19.500,18.500 11,21"/><polyline points="7,6 11,12 20.500,9" fill="none" stroke="${c}" stroke-width="1.400" stroke-linejoin="round"/>`;
+    case 'ghost': return `<path fill="${W}" d="M5.500 21V11a6.500 6.500 0 0 1 13 0v10l-2.200-2-2.100 2-2.200-2-2.200 2-2.100-2z"/><circle cx="9.600" cy="11" r="1.600" fill="${c}"/><circle cx="14.400" cy="11" r="1.600" fill="${c}"/>`;
+    case 'dragon': return `<g fill="${W}"><polygon points="4,20.500 9,3.500 10.800,4.200 6.600,20.500"/><polygon points="9.600,21 14.600,3 16.400,3.700 12.200,21"/><polygon points="15.200,20.500 20.200,3.500 21.800,4.200 17.800,20.500"/></g>`;
+    case 'dark': return `<path fill="${W}" d="M15.500 2.800a9.300 9.300 0 1 0 5.900 14.800A8 8 0 0 1 15.500 2.800z"/>`;
+    case 'steel': return `<polygon fill="${W}" points="${star(3,9.600,9.600,12,12,0).split(' ').filter((_,k)=>true).join(' ')}"/><circle cx="12" cy="12" r="3.600" fill="${c}"/>`;
+    case 'fairy': return `<polygon fill="${W}" points="${star(4,10,2.800,11,13)}"/><polygon fill="${W}" points="${star(4,4,1.200,19,5)}"/>`;
+  }
+  return '';
+}
+function iconSVG(t,size){
+  return `<svg class="ico" width="${size}" height="${size}" viewBox="0 0 32 32" aria-hidden="true"><circle cx="16" cy="16" r="16" fill="${t.c}"/><g transform="translate(4.500 4.500) scale(.96)">${glyph(t.id,t.c)}</g></svg>`;
+}
+
+/* Reglas mnemotécnicas: a2 = ataca x2, a05 = ataca x0.5, d2 = recibe x2 (débil), d05 = recibe x0.5 (resiste). {tipo} se pinta como etiqueta */
+const MN_ES = {
+  normal:{
+    a2:'No pega fuerte a nadie: es el tipo «de a pie».',
+    a05:'Dar un puñetazo normal a una {rock} o a una plancha de {steel}: te duele más a ti.',
+    d2:'Un experto en artes marciales ({fighting}) tumba a cualquier persona normal.',
+    d05:'No resiste nada: una persona normal no tiene defensas especiales.'},
+  fire:{
+    a2:'El fuego quema la {grass}, derrite el {ice}, achicharra a los {bug} y funde el {steel} en la forja.',
+    a05:'No puedes quemar {fire} con fuego, el {water} lo apaga, la {rock} no arde y el {dragon} escupe fuego: está acostumbrado.',
+    d2:'Para apagar una hoguera: le echas {water}, la cubres de {ground} o la rodeas de {rock}s.',
+    d05:'Todo lo que le lanzan se quema o se derrite antes de tocarlo: las hojas de {grass}, el {ice}, los {bug}, el {steel} (se funde) y más {fire}; y las {fairy} son como polillas: se chamuscan al acercarse.'},
+  water:{
+    a2:'El agua apaga el {fire}, convierte la {ground} en barro y erosiona la {rock} (así se hacen los cañones de los ríos).',
+    a05:'Mojar {water} no hace nada, la {grass} se bebe el agua y al {dragon} le resbala.',
+    d2:'El agua conduce la electricidad ({electric}: nunca el secador en la bañera) y las {grass} se la beben.',
+    d05:'Le dan igual el {fire} (lo apaga), más {water}, el {ice} (se derrite y vuelve a ser agua) y el ancla de {steel}, que se hunde sin hacerle nada.'},
+  electric:{
+    a2:'La corriente viaja por el {water} y los rayos caen sobre lo que va {flying} (aviones, cometas, pájaros).',
+    a05:'Rayo contra rayo ({electric}) no hace nada, la {grass} (madera) no conduce bien y el {dragon} es demasiado grande para un chispazo.',
+    d2:'Un terremoto ({ground}) tumba los postes y corta la luz.',
+    d05:'Otra descarga {electric} no le hace nada, los ataques desde el cielo ({flying}) no le asustan porque el rayo manda allí arriba, y un golpe de {steel} solo le hace de cable: la corriente sigue intacta.'},
+  grass:{
+    a2:'Las plantas absorben el {water}, crecen en la {ground} y sus raíces rompen la {rock} (las raíces que levantan las aceras).',
+    a05:'Las hojas y látigos de planta sirven de poco: contra el {fire} arden, contra el {poison} se marchitan, a lo que va {flying} no lo alcanzan, los {bug} se las comen, el {dragon} ni las nota, contra el {steel} se cortan y a otra {grass} solo le hacen cosquillas.',
+    d2:'Una planta muere con {fire}, con heladas ({ice}), con herbicida ({poison}), y se la comen los pájaros ({flying}) y los {bug}.',
+    d05:'El riego ({water}), la energía del sol ({electric}), la {ground} donde vive y otras {grass} solo la ayudan a crecer.'},
+  ice:{
+    a2:'La helada mata la {grass}, congela la {ground}, impide batir las alas a lo que va {flying} y el {dragon}, reptil de sangre fría, no aguanta el frío.',
+    a05:'El hielo se derrite con {fire} y en el {water}, contra otro {ice} no hace nada y contra el {steel} el cubito se rompe.',
+    d2:'El hielo se derrite con {fire}, se rompe a golpe de kárate ({fighting}), con una pedrada ({rock}) o con un picahielos de {steel}.',
+    d05:'Solo resiste a otro {ice}: hielo con hielo, todo sigue igual.'},
+  fighting:{
+    a2:'El karateca tumba a la persona {normal}, rompe bloques de {ice}, ladrillos de {rock}, planchas de {steel} y da su merecido a los matones ({dark}).',
+    a05:'Pegar a algo {poison} te intoxica, a lo que va {flying} no llegas, el {psychic} te lee la mente y esquiva, el {bug} es tan pequeño que no le das y las {fairy} son magia.',
+    d2:'Al luchador lo vencen quien ataca desde el aire ({flying}), quien le controla la mente ({psychic}) y la magia de las {fairy}: el músculo no sirve contra eso.',
+    d05:'Está curtido: las picaduras de {bug} no le hacen nada, una pedrada ({rock}) la encaja como un golpe más y las peleas sucias de los {dark} son su día a día.'},
+  poison:{
+    a2:'El veneno es herbicida para la {grass} y contamina la pureza de las {fairy}.',
+    a05:'No envenenas lo que ya es {poison}, la {ground} lo filtra, la {rock} no lo absorbe y el {ghost} ya está muerto.',
+    d2:'Al veneno lo entierran bajo {ground} (así se eliminan los residuos tóxicos) y el {psychic}, como un médico, lo neutraliza con la mente.',
+    d05:'Quien toca algo venenoso se arrepiente: el {fighting} que le pega, el {bug} que le pica, la {grass} que crece al lado, la {fairy} pura y el propio {poison}.'},
+  ground:{
+    a2:'Echar tierra apaga el {fire}, la toma de tierra anula lo {electric}, se entierra el {poison}, y un terremoto derrumba la {rock} y los edificios de {steel}.',
+    a05:'Echar tierra a una {grass} solo la abona, y a los {bug} (gusanos) les estás dando casa.',
+    d2:'La tierra se hace barro con {water}, las raíces de la {grass} la parten y el {ice} la congela y la agrieta.',
+    d05:'El {poison} que le echan se filtra y desaparece, y las pedradas ({rock}) se hunden en ella sin hacerle nada.'},
+  flying:{
+    a2:'Los pájaros se comen las semillas de la {grass} y a los {bug}, y atacan al luchador ({fighting}) desde arriba, donde no llega.',
+    a05:'Volar contra un cable {electric} te electrocuta; contra una {rock} o un edificio de {steel} te estrellas.',
+    d2:'Al pájaro lo derriban un rayo ({electric}), una granizada ({ice}) o una pedrada con tirachinas ({rock}).',
+    d05:'Lo que está en el suelo no le alcanza: la {grass}, el puñetazo del {fighting} y los {bug}, que encima se los come.'},
+  psychic:{
+    a2:'La mente vence al músculo ({fighting}) y controla el {poison} (la medicina).',
+    a05:'Dos mentes ({psychic}) se anulan y un casco de {steel} (el gorro de papel de aluminio) bloquea la telepatía.',
+    d2:'Al psíquico le dan miedo los {bug} (fobia a las arañas), los {ghost} y la oscuridad ({dark}): miedos que la mente no controla.',
+    d05:'Ve venir los golpes del {fighting} y aguanta a otro {psychic}.'},
+  bug:{
+    a2:'Los bichos se comen la {grass}, dan fobia al {psychic} y viven en la oscuridad ({dark}) debajo de las piedras.',
+    a05:'El ataque de un bicho sirve de poco: al {fire} no se puede acercar, al luchador ({fighting}) solo le hace cosquillas, si muerde algo {poison} se envenena él, al que va {flying} no lo alcanza, al {ghost} lo atraviesa, el {steel} no lo puede morder y la magia de las {fairy} lo espanta.',
+    d2:'Se quema con {fire}, si hay mucho viento ({flying}) no puede volar y si lo aplastas con una {rock} se muere.',
+    d05:'Resiste {grass} porque es su alimento, {fighting} porque es mosca contra humano (no le das) y {ground} porque el gusano vive en la tierra.'},
+  rock:{
+    a2:'Una piedra apaga el {fire} (el círculo de piedras de la hoguera), rompe el {ice}, derriba con tirachinas lo que va {flying} y aplasta {bug}s.',
+    a05:'Pero si le tiras una piedra al karateca ({fighting}) la para con la mano, si la tiras a la {ground} se hunde y contra el {steel} rebota.',
+    d2:'La roca se erosiona con {water}, las raíces de la {grass} la parten, el karateca ({fighting}) la rompe, la {ground} la sepulta y el pico de {steel} la pica.',
+    d05:'Aguanta un golpe {normal}, no arde con {fire}, el {poison} no le entra y lo que va {flying} se estrella contra ella.'},
+  ghost:{
+    a2:'El fantasma asusta a la mente ({psychic}) y entre {ghost}s sí se pueden tocar.',
+    a05:'Pero en la oscuridad ({dark}) un fantasma no asusta: nadie lo ve.',
+    d2:'Solo otro {ghost} o la oscuridad total ({dark}) pueden con un fantasma.',
+    d05:'Ya está muerto: el {poison} no le hace nada y los {bug} lo atraviesan.'},
+  dragon:{
+    a2:'Solo un dragón puede con otro {dragon}.',
+    a05:'El caballero con armadura de {steel} aguanta el ataque del dragón.',
+    d2:'Al dragón, reptil de sangre fría, lo mata el {ice}; también otro {dragon} y la magia de las {fairy} (en los cuentos de hadas el dragón siempre pierde).',
+    d05:'Domina los cuatro elementos: {fire}, {water}, {electric} y {grass} le hacen poco.'},
+  dark:{
+    a2:'La oscuridad ciega al {psychic} (no puede ver para leer la mente) y se traga a los {ghost}.',
+    a05:'Pero el matón no puede con el luchador ({fighting}), ni con otro {dark}, ni con la luz de las {fairy}.',
+    d2:'Al matón lo vencen el luchador justiciero ({fighting}), los {bug} que salen de la oscuridad y la luz de las {fairy}.',
+    d05:'En la oscuridad no le asustan los {ghost} ni otros {dark}.'},
+  steel:{
+    a2:'El pico de acero rompe el {ice} y la {rock}, y el hierro frío es lo que más temen las {fairy} en las leyendas.',
+    a05:'Pero una espada de acero contra el {fire} se pone al rojo y se ablanda, en el {water} se oxida, al {electric} solo le hace de cable y contra otro {steel} solo saca chispas.',
+    d2:'La forja del herrero: el {fire} lo funde, los martillazos del luchador ({fighting}) lo doblan y un terremoto ({ground}) tira los edificios de acero.',
+    d05:'Es una armadura, casi todo rebota: {normal}, {grass}, {ice}, {flying}, {psychic}, {bug}, {rock}, {dragon}, {steel} y {fairy}. Truco: más fácil memorizar lo que NO resiste (agua, eléctrico, fantasma y siniestro le hacen daño normal) y sus 3 debilidades.'},
+  fairy:{
+    a2:'La magia de las hadas vence a la fuerza bruta ({fighting}), al {dragon} de los cuentos y a la oscuridad ({dark}).',
+    a05:'Pero su magia no funciona contra el {fire} (se le chamuscan las alas al acercarse), ni contra el {poison}, que la contamina, ni contra el hierro ({steel}), su punto débil en las leyendas.',
+    d2:'La contaminación ({poison}) y el hierro frío ({steel}) destruyen a las hadas.',
+    d05:'Ni el luchador ({fighting}), ni los {bug}, ni los matones ({dark}) pueden tocar algo mágico.'}
+};
+const MN_EN = {
+  normal:{
+    a2:'It hits nothing hard: it is the “everyday” type.',
+    a05:'Punch a {rock} or a {steel} plate with a normal fist: it hurts you more than it.',
+    d2:'A martial arts expert ({fighting}) knocks down any normal person.',
+    d05:'It resists nothing: a normal person has no special defences.'},
+  fire:{
+    a2:'Fire burns {grass}, melts {ice}, scorches {bug}s and melts {steel} in the forge.',
+    a05:'You cannot burn {fire} with fire, {water} puts it out, {rock} does not burn and the {dragon} breathes fire itself: it is used to it.',
+    d2:'To put out a campfire you pour {water} on it, cover it with {ground} or ring it with {rock}s.',
+    d05:'Everything thrown at it burns or melts before touching it: {grass} leaves, {ice}, {bug}s, {steel} (it melts) and more {fire}; and {fairy} types are like moths: they get singed as they come close.'},
+  water:{
+    a2:'Water puts out {fire}, turns {ground} into mud and wears down {rock} (that is how rivers carve canyons).',
+    a05:'Wetting {water} does nothing, {grass} drinks the water and it just slides off the {dragon}.',
+    d2:'Water conducts electricity ({electric}: never a hair dryer in the bath) and {grass} drinks it up.',
+    d05:'It does not care about {fire} (it puts it out), more {water}, {ice} (it melts back into water) or a {steel} anchor, which just sinks without hurting it.'},
+  electric:{
+    a2:'Current travels through {water} and lightning strikes whatever is {flying} (planes, kites, birds).',
+    a05:'Lightning against lightning ({electric}) does nothing, {grass} (wood) is a poor conductor and the {dragon} is too big for a spark.',
+    d2:'An earthquake ({ground}) knocks down the poles and cuts the power.',
+    d05:'Another {electric} shock does nothing to it, attacks from the sky ({flying}) do not scare it because lightning rules up there, and a {steel} hit just acts as a wire: the current stays intact.'},
+  grass:{
+    a2:'Plants soak up {water}, grow in {ground} and their roots crack {rock} (the roots that lift pavements).',
+    a05:'Leaves and vines do little: against {fire} they burn, against {poison} they wither, they cannot reach what is {flying}, {bug}s eat them, the {dragon} barely notices, {steel} cuts them and another {grass} just gets tickled.',
+    d2:'A plant dies from {fire}, frost ({ice}) and weedkiller ({poison}), and gets eaten by birds ({flying}) and {bug}s.',
+    d05:'Watering ({water}), the sun’s energy ({electric}), the {ground} it lives in and other {grass} only help it grow.'},
+  ice:{
+    a2:'Frost kills {grass}, freezes {ground}, stops whatever is {flying} from flapping its wings, and the {dragon}, a cold-blooded reptile, cannot stand the cold.',
+    a05:'Ice melts with {fire} and in {water}, does nothing to another {ice}, and the ice cube shatters against {steel}.',
+    d2:'Ice melts with {fire} and breaks with a karate chop ({fighting}), a thrown stone ({rock}) or a {steel} ice pick.',
+    d05:'It only resists another {ice}: ice on ice, nothing changes.'},
+  fighting:{
+    a2:'The karateka knocks down a {normal} person, breaks blocks of {ice}, {rock} bricks and {steel} plates, and gives the thugs ({dark}) what they deserve.',
+    a05:'Hitting something {poison} poisons you, you cannot reach what is {flying}, the {psychic} reads your mind and dodges, the {bug} is so small you miss it and {fairy} types are magic.',
+    d2:'The fighter is beaten by whoever attacks from the air ({flying}), whoever controls its mind ({psychic}) and {fairy} magic: muscle is useless against those.',
+    d05:'It is battle-hardened: {bug} stings do nothing, a thrown stone ({rock}) is just one more hit, and the dirty fights of {dark} thugs are its daily life.'},
+  poison:{
+    a2:'Poison is weedkiller for {grass} and taints the purity of {fairy} types.',
+    a05:'You cannot poison what is already {poison}, {ground} filters it, {rock} does not absorb it and the {ghost} is already dead.',
+    d2:'Poison gets buried under {ground} (that is how toxic waste is disposed of) and the {psychic}, like a doctor, neutralises it with the mind.',
+    d05:'Whoever touches something poisonous regrets it: the {fighting} type that punches it, the {bug} that bites it, the {grass} growing next to it, the pure {fairy} and {poison} itself.'},
+  ground:{
+    a2:'Throwing dirt puts out {fire}, earthing cancels {electric}, {poison} gets buried, and an earthquake brings down {rock} and {steel} buildings.',
+    a05:'Throwing dirt on {grass} only fertilises it, and you are giving {bug}s (worms) a home.',
+    d2:'Earth turns to mud with {water}, {grass} roots split it and {ice} freezes and cracks it.',
+    d05:'The {poison} thrown at it seeps in and disappears, and stones ({rock}) sink into it without harming it.'},
+  flying:{
+    a2:'Birds eat {grass} seeds and {bug}s, and attack the fighter ({fighting}) from above, where it cannot reach.',
+    a05:'Flying into an {electric} wire electrocutes you; into a {rock} or a {steel} building, you crash.',
+    d2:'A bird is brought down by lightning ({electric}), a hailstorm ({ice}) or a slingshot stone ({rock}).',
+    d05:'What is on the ground cannot reach it: {grass}, the {fighting} punch and {bug}s, which it even eats.'},
+  psychic:{
+    a2:'Mind beats muscle ({fighting}) and controls {poison} (medicine).',
+    a05:'Two minds ({psychic}) cancel each other out and a {steel} helmet (the tinfoil hat) blocks telepathy.',
+    d2:'The psychic is afraid of {bug}s (fear of spiders), {ghost}s and darkness ({dark}): fears the mind cannot control.',
+    d05:'It sees the {fighting} blows coming and can handle another {psychic}.'},
+  bug:{
+    a2:'Bugs eat {grass}, give the {psychic} a phobia and live in the darkness ({dark}) under stones.',
+    a05:'A bug’s attack does little: it cannot get close to {fire}, it only tickles the fighter ({fighting}), if it bites something {poison} it gets poisoned itself, it cannot reach what is {flying}, it passes through the {ghost}, it cannot bite {steel} and {fairy} magic scares it off.',
+    d2:'It burns with {fire}, in strong wind ({flying}) it cannot fly, and if you squash it with a {rock} it dies.',
+    d05:'It resists {grass} because that is its food, {fighting} because it is a fly against a human (you miss it), and {ground} because the worm lives in the earth.'},
+  rock:{
+    a2:'A stone puts out {fire} (the ring of stones around a campfire), breaks {ice}, brings down whatever is {flying} with a slingshot and squashes {bug}s.',
+    a05:'But throw a stone at the karateka ({fighting}) and they catch it, throw it at the {ground} and it sinks, and against {steel} it bounces off.',
+    d2:'Rock is worn down by {water}, split by {grass} roots, broken by the karateka ({fighting}), buried by {ground} and chipped away by a {steel} pickaxe.',
+    d05:'It takes a {normal} hit, does not burn with {fire}, {poison} cannot get in and whatever is {flying} crashes into it.'},
+  ghost:{
+    a2:'A ghost scares the mind ({psychic}), and {ghost}s can touch each other.',
+    a05:'But in the darkness ({dark}) a ghost scares no one: nobody can see it.',
+    d2:'Only another {ghost} or total darkness ({dark}) can beat a ghost.',
+    d05:'It is already dead: {poison} does nothing and {bug}s pass right through it.'},
+  dragon:{
+    a2:'Only a dragon can beat another {dragon}.',
+    a05:'The knight in {steel} armour withstands the dragon’s attack.',
+    d2:'The dragon, a cold-blooded reptile, is killed by {ice}; also by another {dragon} and by {fairy} magic (in fairy tales the dragon always loses).',
+    d05:'It masters the four elements: {fire}, {water}, {electric} and {grass} do little to it.'},
+  dark:{
+    a2:'Darkness blinds the {psychic} (it cannot see to read minds) and swallows {ghost}s.',
+    a05:'But the thug cannot beat the fighter ({fighting}), another {dark} or the light of {fairy} types.',
+    d2:'The thug is beaten by the righteous fighter ({fighting}), the {bug}s that crawl out of the dark and the light of {fairy} types.',
+    d05:'In the dark, {ghost}s and other {dark} types do not scare it.'},
+  steel:{
+    a2:'A steel pickaxe breaks {ice} and {rock}, and cold iron is what {fairy} folk fear most in legends.',
+    a05:'But a steel sword glows red and softens in {fire}, rusts in {water}, only acts as a wire for {electric}, and against another {steel} just throws sparks.',
+    d2:'The blacksmith’s forge: {fire} melts it, the fighter’s hammer blows ({fighting}) bend it and an earthquake ({ground}) topples steel buildings.',
+    d05:'It is armour, almost everything bounces off: {normal}, {grass}, {ice}, {flying}, {psychic}, {bug}, {rock}, {dragon}, {steel} and {fairy}. Tip: it is easier to memorise what it does NOT resist (water, electric, ghost and dark deal normal damage) and its 3 weaknesses.'},
+  fairy:{
+    a2:'Fairy magic beats brute force ({fighting}), the fairy-tale {dragon} and darkness ({dark}).',
+    a05:'But its magic does not work against {fire} (its wings get singed as it comes close), against {poison}, which taints it, or against iron ({steel}), its weak spot in legends.',
+    d2:'Pollution ({poison}) and cold iron ({steel}) destroy fairies.',
+    d05:'Neither the fighter ({fighting}), nor {bug}s, nor thugs ({dark}) can touch something magical.'}
+};
+const IMMN_EN = {
+  'normal>ghost':'A normal hit goes right through the {ghost}: it has no body.',
+  'fighting>ghost':'Martial arts are useless against a {ghost}: there is no body to hit.',
+  'electric>ground':'{ground} is the earth connection: electricity drains away into it.',
+  'poison>steel':'{steel} is metal: it cannot be poisoned.',
+  'ground>flying':'An earthquake does not affect whatever is {flying}: it does not touch the ground.',
+  'psychic>dark':'The mind cannot read darkness: {dark} is immune to psychic powers.',
+  'ghost>normal':'A ghost cannot touch someone {normal}: it passes right through them.',
+  'dragon>fairy':'The magic of {fairy} types completely cancels the dragon.'
+};
+
+/* estado compartido */
+const S = {drag:false, view:'circular', hover:null, sel:null, mode:'atk', show2:true, show05:true};
+const focusId = () => S.view==='estatico' ? null : (S.hover || S.sel);
+const visible = e => e.m===2 ? S.show2 : S.show05;
+function activeEdge(e,f){
+  if(!f || !visible(e)) return false;
+  if(S.mode==='atk') return e.s===f;
+  if(S.mode==='def') return e.t===f;
+  return e.s===f || e.t===f;
+}
+const views = [];
+function refresh(){ views.forEach(v=>v.apply()); renderPanel(); }
+
+/* geometría */
+const NR = 22;
+function arcPath(p1,p2,r,curv){
+  const dx=p2.x-p1.x, dy=p2.y-p1.y, d=Math.hypot(dx,dy)||1;
+  const cx=(p1.x+p2.x)/2 - dy/d*d*curv, cy=(p1.y+p2.y)/2 + dx/d*d*curv;
+  const u1=unit(cx-p1.x,cy-p1.y), u2=unit(cx-p2.x,cy-p2.y);
+  const sx=p1.x+u1.x*(r+1), sy=p1.y+u1.y*(r+1), ex=p2.x+u2.x*(r+2), ey=p2.y+u2.y*(r+2);
+  return `M${sx.toFixed(1)},${sy.toFixed(1)}Q${cx.toFixed(1)},${cy.toFixed(1)} ${ex.toFixed(1)},${ey.toFixed(1)}`;
+}
+function unit(x,y){const l=Math.hypot(x,y)||1;return {x:x/l,y:y/l};}
+function rot(u,a){return {x:u.x*Math.cos(a)-u.y*Math.sin(a), y:u.x*Math.sin(a)+u.y*Math.cos(a)};}
+function loopPath(p,u,r){
+  const a=rot(u,-.55), b=rot(u,.55), ca=rot(u,-.75), cb=rot(u,.75), L=r+44;
+  return `M${(p.x+a.x*(r+1)).toFixed(1)},${(p.y+a.y*(r+1)).toFixed(1)}C${(p.x+ca.x*L).toFixed(1)},${(p.y+ca.y*L).toFixed(1)} ${(p.x+cb.x*L).toFixed(1)},${(p.y+cb.y*L).toFixed(1)} ${(p.x+b.x*(r+2)).toFixed(1)},${(p.y+b.y*(r+2)).toFixed(1)}`;
+}
+function addDefs(svg,pre){
+  const d=svg.append('defs');
+  [['a2','var(--sup)'],['a05','var(--res)']].forEach(([k,col])=>{
+    d.append('marker').attr('id',`${pre}-${k}`).attr('viewBox','0 0 10 10').attr('refX',9).attr('refY',5)
+      .attr('markerWidth',9).attr('markerHeight',9).attr('markerUnits','userSpaceOnUse').attr('orient','auto')
+      .append('path').attr('d','M0,0L10,5L0,10z').style('fill',col);
+  });
+}
+function drawNodes(g,data){
+  const n=g.selectAll('g.n').data(data,d=>d.id).join('g').attr('class','n');
+  n.append('circle').attr('class','halo').attr('r',NR+5);
+  n.append('circle').attr('class','disc').attr('r',NR).attr('fill',d=>d.c);
+  n.append('g').attr('transform',`translate(${-NR*0.66},${-NR*0.66}) scale(${NR*1.32/24})`).html(d=>glyph(d.id,d.c));
+  n.append('title').text(d=>d.n);
+  return n;
+}
+function bindNode(n,svgEl){
+  n.attr('tabindex',0).attr('role','button').attr('aria-label',d=>d.n)
+    .on('mouseenter',(ev,d)=>{S.hover=d.id;refresh();})
+    .on('mouseleave',()=>{S.hover=null;refresh();})
+    .on('click',(ev,d)=>{ev.stopPropagation();S.sel = S.sel===d.id?null:d.id;S.hover=null;refresh();})
+    .on('keydown',(ev,d)=>{if(ev.key==='Enter'||ev.key===' '){ev.preventDefault();S.sel=S.sel===d.id?null:d.id;refresh();}});
+  d3.select(svgEl).on('click',()=>{S.sel=null;refresh();});
+}
+function applyCommon(svg,paths,nodes,interactive){
+  const f = interactive ? focusId() : null;
+  svg.classed('focused',!!f);
+  paths.classed('off',e=>!visible(e)).classed('on',e=>activeEdge(e,f));
+  const rel=new Set(); if(f){rel.add(f);EDGES.forEach(e=>{if(activeEdge(e,f)){rel.add(e.s);rel.add(e.t);}});}
+  nodes.classed('dim',d=>f && !rel.has(d.id)).classed('sel',d=>interactive && S.sel===d.id);
+}
+
+/* vista circular (interactiva o estática) */
+function buildCircle(id,interactive){
+  const el=document.getElementById(id), svg=d3.select(el);
+  const C=400,R=272;
+  svg.attr('viewBox','-75 25 950 750'); if(!interactive) svg.classed('static',true);
+  addDefs(svg,id);
+  const pos={}; TYPES.forEach(t=>{const a=-Math.PI/2+t.i*2*Math.PI/TYPES.length;pos[t.id]={x:C+R*Math.cos(a),y:C+R*Math.sin(a),a};});
+  const paths=svg.append('g').selectAll('path').data(EDGES).join('path')
+    .attr('class',e=>'e '+(e.m===2?'s2':'s05'))
+    .attr('marker-end',e=>`url(#${id}-${e.m===2?'a2':'a05'})`)
+    .attr('d',e=>e.s===e.t ? loopPath(pos[e.s],{x:Math.cos(pos[e.s].a),y:Math.sin(pos[e.s].a)},NR) : arcPath(pos[e.s],pos[e.t],NR,.13));
+  const gN=svg.append('g');
+  const nodes=drawNodes(gN,TYPES).attr('transform',d=>`translate(${pos[d.id].x},${pos[d.id].y})`);
+  const LR=R+NR+40;
+  gN.selectAll('text').data(TYPES).join('text').attr('class','lab')
+    .attr('x',d=>C+LR*Math.cos(pos[d.id].a)).attr('y',d=>C+LR*Math.sin(pos[d.id].a))
+    .attr('dominant-baseline','middle')
+    .attr('text-anchor',d=>{const c=Math.cos(pos[d.id].a);return c>.3?'start':c<-.3?'end':'middle';})
+    .text(d=>d.n);
+  if(interactive) bindNode(nodes,el);
+  views.push({apply:()=>applyCommon(svg,paths,nodes,interactive)});
+}
+
+/* vista de fuerzas */
+function buildForce(id){
+  const el=document.getElementById(id), svg=d3.select(el);
+  const W=900,H=760; svg.attr('viewBox',`0 0 ${W} ${H}`);
+  addDefs(svg,id);
+  const nodesData=TYPES.map(t=>{const a=-Math.PI/2+t.i*2*Math.PI/18;return Object.assign(Object.create(t),{x:W/2+250*Math.cos(a),y:H/2+250*Math.sin(a)});});
+  const ND=Object.fromEntries(nodesData.map(d=>[d.id,d]));
+  const links=EDGES.filter(e=>e.s!==e.t).map(e=>({source:e.s,target:e.t,m:e.m}));
+  const paths=svg.append('g').selectAll('path').data(EDGES).join('path')
+    .attr('class',e=>'e '+(e.m===2?'s2':'s05'))
+    .attr('marker-end',e=>`url(#${id}-${e.m===2?'a2':'a05'})`);
+  const gN=svg.append('g');
+  const nodes=drawNodes(gN,nodesData);
+  nodes.append('text').attr('class','lab').attr('y',NR+16).attr('text-anchor','middle').text(d=>d.n);
+  bindNode(nodes,el);
+  const M=NR+30;
+  const sim=d3.forceSimulation(nodesData)
+    .force('link',d3.forceLink(links).id(d=>d.id).distance(170).strength(.04))
+    .force('charge',d3.forceManyBody().strength(-900))
+    .force('x',d3.forceX(W/2).strength(.06)).force('y',d3.forceY(H/2).strength(.07))
+    .force('collide',d3.forceCollide(NR+26));
+  const draw=()=>{
+      nodesData.forEach(d=>{d.x=Math.max(M,Math.min(W-M,d.x));d.y=Math.max(M,Math.min(H-M-10,d.y));});
+      nodes.attr('transform',d=>`translate(${d.x},${d.y})`);
+      paths.attr('d',e=>{
+        const a=ND[e.s], b=ND[e.t];
+        if(a===b) return loopPath(a,unit(a.x-W/2,a.y-H/2),NR);
+        return arcPath(a,b,NR,.12);
+      });
+    };
+  sim.stop(); for(let i=0;i<500;i++) sim.tick(); draw(); sim.on('tick',draw);
+  nodes.call(d3.drag().filter(ev=>S.drag && !ev.button)
+    .on('start',(ev,d)=>{if(!ev.active)sim.alphaTarget(.25).restart();d.fx=d.x;d.fy=d.y;})
+    .on('drag',(ev,d)=>{d.fx=ev.x;d.fy=ev.y;})
+    .on('end',(ev,d)=>{if(!ev.active)sim.alphaTarget(0);d.fx=null;d.fy=null;}));
+  views.push({apply:()=>applyCommon(svg,paths,nodes,true)});
+}
+
+/* vista por grupos: posiciones optimizadas para minimizar cruces (≈120 frente a ≈600 del círculo) */
+const GPOS={"normal":[454,511],"fire":[417,260],"water":[202,317],"electric":[92,458],"grass":[172,174],"ice":[271,371],"fighting":[666,581],"poison":[769,274],"ground":[90,80],"flying":[416,414],"psychic":[731,640],"bug":[903,170],"rock":[448,336],"ghost":[910,335],"dragon":[111,582],"dark":[823,612],"steel":[230,519],"fairy":[687,416]};
+const GROUP_B=new Set(['fighting','poison','psychic','bug','ghost','dark','fairy']);
+function buildGroups(id){
+  const el=document.getElementById(id), svg=d3.select(el);
+  svg.attr('viewBox','0 0 1000 720'); addDefs(svg,id);
+  const pos={}; TYPES.forEach(t=>pos[t.id]={x:GPOS[t.id][0],y:GPOS[t.id][1]});
+  const box=(ids,label)=>{const xs=ids.map(i=>pos[i].x),ys=ids.map(i=>pos[i].y);
+    const x0=Math.min(...xs)-62,x1=Math.max(...xs)+62,y0=Math.min(...ys)-62,y1=Math.max(...ys)+62;
+    svg.append('rect').attr('class','grp-bg').attr('x',x0).attr('y',y0).attr('width',x1-x0).attr('height',y1-y0).attr('rx',28);
+    svg.append('text').attr('class','grp-lab').attr('data-k',label).attr('x',x0+18).attr('y',y0+22).text(tr(label));
+    return {x:(x0+x1)/2,y:(y0+y1)/2};};
+  const cA=box(TYPES.filter(t=>!GROUP_B.has(t.id)).map(t=>t.id),'groupA');
+  const cB=box([...GROUP_B],'groupB');
+  const paths=svg.append('g').selectAll('path').data(EDGES).join('path')
+    .attr('class',e=>'e '+(e.m===2?'s2':'s05'))
+    .attr('marker-end',e=>`url(#${id}-${e.m===2?'a2':'a05'})`)
+    .attr('d',e=>{const p=pos[e.s]; if(e.s===e.t){const c=GROUP_B.has(e.s)?cB:cA; return loopPath(p,unit(p.x-c.x,p.y-c.y),NR);} return arcPath(p,pos[e.t],NR,.08);});
+  const gN=svg.append('g');
+  const nodes=drawNodes(gN,TYPES).attr('transform',d=>`translate(${pos[d.id].x},${pos[d.id].y})`);
+  nodes.append('text').attr('class','lab').attr('y',NR+16).attr('text-anchor','middle').text(d=>d.n);
+  bindNode(nodes,el);
+  views.push({apply:()=>applyCommon(svg,paths,nodes,true)});
+}
+
+/* ficha lateral */
+const panel=document.getElementById('panel');
+const order=ids=>ids.slice().sort((a,b)=>BY[a].i-BY[b].i);
+function chips(ids){
+  if(!ids.length) return `<div class="none">${tr('none')}</div>`;
+  return `<div class="chips">${order(ids).map(i=>`<button class="chip" data-t="${i}">${iconSVG(BY[i],20)}${BY[i].n}</button>`).join('')}</div>`;
+}
+function mnHTML(txt){ return txt.replace(/\{(\w+)\}/g,(_,id)=>`<span class="tk">${iconSVG(BY[id],15)}${BY[id].n}</span>`); }
+function row(m,ids,show,key,f){ if(!show) return ''; const t=MN[f]&&MN[f][key];
+  return `<div class="row"><span class="mult ${m===2?'s2':'s05'}">${m===2?'x2':'x0.5'}</span>${chips(ids)}</div>${t?`<div class="mn">${mnHTML(t)}</div>`:''}`; }
+function renderPanel(){
+  const f=focusId();
+  if(!f){
+    const n2=EDGES.filter(e=>e.m===2).length, n05=EDGES.length-n2;
+    panel.innerHTML=`<div class="empty"><p class="big">${tr('pickType')}</p>
+      <p>${tr('pickTypeP')}</p>
+      <div class="stats"><div class="stat s2"><div class="v">${n2}</div><div class="k">${tr('rel2')}</div></div>
+      <div class="stat s05"><div class="v">${n05}</div><div class="k">${tr('rel05')}</div></div></div>
+      <p class="note">${tr('selfNote')}</p></div>`;
+    return;
+  }
+  const t=BY[f];
+  const atk2=EDGES.filter(e=>e.s===f&&e.m===2).map(e=>e.t), atk05=EDGES.filter(e=>e.s===f&&e.m!==2).map(e=>e.t);
+  const def2=EDGES.filter(e=>e.t===f&&e.m===2).map(e=>e.s), def05=EDGES.filter(e=>e.t===f&&e.m!==2).map(e=>e.s);
+  const showA=S.mode!=='def', showD=S.mode!=='atk';
+  panel.innerHTML=`<div class="ph">${iconSVG(t,48)}<div><h2>${t.n}</h2><div class="mode">${S.sel===f?tr('pinned'):tr('preview')}</div></div></div>
+    <div class="sec" ${showA?'':'hidden'}><h3>${tr('atkHead')}</h3>${row(2,atk2,S.show2,'a2',f)}${row(.5,atk05,S.show05,'a05',f)}</div>
+    <div class="sec" ${showD?'':'hidden'}><h3>${tr('defHead')}</h3>${row(2,def2,S.show2,'d2',f)}${row(.5,def05,S.show05,'d05',f)}</div>
+    <p class="note">${tr('panelNote')}</p>`;
+}
+panel.addEventListener('click',ev=>{const b=ev.target.closest('.chip');if(b){S.sel=b.dataset.t;S.hover=null;refresh();}});
+
+/* ===== Práctica ===== */
+const IMM = {normal:['ghost'],electric:['ground'],fighting:['ghost'],poison:['steel'],ground:['flying'],psychic:['dark'],ghost:['normal'],dragon:['fairy']};
+const IMMN_ES = {
+  'normal>ghost':'Un golpe normal atraviesa al {ghost}: no tiene cuerpo.',
+  'fighting>ghost':'Las artes marciales no sirven contra un {ghost}: no hay cuerpo que golpear.',
+  'electric>ground':'La {ground} es la toma de tierra: la electricidad se pierde en ella.',
+  'poison>steel':'El {steel} es metal: no se puede envenenar.',
+  'ground>flying':'Un terremoto no afecta a lo que va {flying}: no toca el suelo.',
+  'psychic>dark':'La mente no puede leer la oscuridad: el {dark} es inmune a los poderes psíquicos.',
+  'ghost>normal':'Un fantasma no puede tocar a alguien {normal}: lo atraviesa.',
+  'dragon>fairy':'La magia de las {fairy} anula por completo al dragón.'
+};
+let MN=L==='en'?MN_EN:MN_ES, IMMN=L==='en'?IMMN_EN:IMMN_ES;
+function mult(a,d){ if(IMM[a]&&IMM[a].includes(d)) return 0; if(SE[a]&&SE[a].includes(d)) return 2; if(NVE[a]&&NVE[a].includes(d)) return .5; return 1; }
+const effOf=(a,ds)=>ds.reduce((p,d)=>p*mult(a,d),1);
+const NUM={4:'x4',2:'x2',1:'x1',0.5:'x0.5',0.25:'x0.25',0:'x0'};
+const IDS=TYPES.map(t=>t.id);
+const LS_ST='tipos-practica-v1', LS_SET='tipos-practica-ajustes-v1';
+function lsGet(k){try{return JSON.parse(localStorage.getItem(k)||'null');}catch(e){return null;}}
+function lsSet(k,v){try{localStorage.setItem(k,JSON.stringify(v));}catch(e){}}
+
+const P=Object.assign({sdef:true,satk:false,sfreq:'low',mnem:'def',def:'both',focus:'',pause:'d5err',fmt:'num',extra:false,smart:true,imm:true}, lsGet(LS_SET)||{});
+let ST={total:0,ok:0,best:0,m:{},s:{}};   // s: "def:fire" -> [perfectas, veces, aciertos, casillas]
+          // m: "ataque>def1+def2" -> [aciertos, intentos]
+let streak=0, Q=null, answered=false, qn=0, nextT=null, sortWorst=true, confirmReset=false, storeNote='storeLocal';
+
+function textOn(hex){const n=parseInt(hex.slice(1),16),r=(n>>16)/255,g=(n>>8&255)/255,b=(n&255)/255;return (0.299*r+0.587*g+0.114*b)>0.62?'#17181c':'#fff';}
+function pill(id){const t=BY[id];return `<span class="tpill" style="--c:${t.c};--tc:${textOn(t.c)}">${iconSVG(t,26)}${t.n}</span>`;}
+function mini(id){const t=BY[id];return `<span class="tk">${iconSVG(t,15)}${t.n}</span>`;}
+const rnd=a=>a[Math.floor(Math.random()*a.length)];
+
+function randQ(){
+  const dual = P.def==='dual' || (P.def==='both' && Math.random()<.5);
+  const defsWith=must=>{ if(!dual) return [must||rnd(IDS)]; const a=must||rnd(IDS); let b; do{b=rnd(IDS);}while(b===a); return [a,b]; };
+  let att, defs;
+  if(P.focus && Math.random()<.5){ att=P.focus; defs=defsWith(); }
+  else if(P.focus){ att=rnd(IDS); defs=defsWith(P.focus); }
+  else { att=rnd(IDS); defs=defsWith(); }
+  defs.sort((x,y)=>BY[x].i-BY[y].i);
+  return {att,defs,ans:effOf(att,defs),key:att+'>'+defs.join('+')};
+}
+function pickQ(){
+  const ok=x=>(P.imm||x.ans!==0) && (!Q||x.key!==Q.key);
+  const c=[]; let guard=0;
+  while(c.length<(P.smart?8:1) && guard++<400){ const x=randQ(); if(ok(x)) c.push(x); }
+  if(!c.length) return randQ();
+  if(!P.smart) return c[0];
+  const w=x=>{const s=ST.m[x.key]; const n=s?s[1]:0, err=s?s[1]-s[0]:0; return .4+4*(err+.5)/(n+1);};
+  const ws=c.map(w), tot=ws.reduce((a,b)=>a+b,0); let r=Math.random()*tot;
+  for(let i=0;i<c.length;i++){ r-=ws[i]; if(r<=0) return c[i]; }
+  return c[c.length-1];
+}
+function options(){
+  const dual=Q.defs.length>1;
+  let o = (dual||P.extra) ? [4,2,1,.5,.25,0] : [2,1,.5,0];
+  if(!P.imm) o=o.filter(m=>m!==0);
+  return o;
+}
+const label=m=>P.fmt==='verb'?tr('verb')[m]:NUM[m];
+
+function newQuestion(){
+  clearTimeout(nextT); nextT=null;
+  Q = Math.random()<sortChance() ? pickSort() : pickQ(); answered=false; qn++; sel=null;
+  if(Q.kind==='sort'){ place={}; IDS.forEach(id=>place[id]=1); }
+  renderQuestion();
+}
+function renderQuestion(){
+  const $=id=>document.getElementById(id), isSort=Q.kind==='sort';
+  $('qn').textContent=qn;
+  $('qopts').hidden=isSort; $('qsort').hidden=!isSort; $('qcheck').hidden=!isSort;
+  if(isSort){
+    const def=Q.mode==='def';
+    $('qtitle').textContent = def ? tr('qSortDef') : tr('qSortAtk');
+    $('sideAtk').hidden=def; $('sideDef').hidden=!def; $('qvs').hidden=true;
+    $(def?'qdef':'qatk').innerHTML=pill(Q.t);
+    $('qkeys').textContent = tr('qSortKeys');
+    $('qkeys').classList.add('sorthint');
+    renderBoard();
+  } else {
+    $('qtitle').textContent=tr('qTitle');
+    $('sideAtk').hidden=false; $('sideDef').hidden=false; $('qvs').hidden=false;
+    $('qatk').innerHTML=pill(Q.att);
+    $('qdef').innerHTML=Q.defs.map(pill).join('');
+    $('qopts').innerHTML=options().map((m,i)=>`<button class="opt" data-m="${m}"><span class="k">${i+1}</span>${label(m)}</button>`).join('');
+    $('qkeys').textContent=tr('qKeys');
+    $('qkeys').classList.remove('sorthint');
+  }
+  $('qfb').hidden=true;
+  $('qnext').hidden=true;
+  setTimer(0,false);
+}
+function setTimer(ms,run){
+  const bar=document.querySelector('#qtimer i'); bar.style.transition='none'; bar.style.width=run?'100%':'0';
+  if(run){ void bar.offsetWidth; bar.style.transition=`width ${ms}ms linear`; bar.style.width='0'; }
+}
+function answer(m){
+  if(answered||!Q||Q.kind==='sort') return; answered=true;
+  const right=m===Q.ans;
+  const s=ST.m[Q.key]||[0,0]; ST.m[Q.key]=[s[0]+(right?1:0), s[1]+1];
+  ST.total++; if(right) ST.ok++;
+  streak = right ? streak+1 : 0; ST.best=Math.max(ST.best||0,streak);
+  document.querySelectorAll('#qopts .opt').forEach(b=>{ const bm=+b.dataset.m; b.disabled=true;
+    if(bm===Q.ans) b.classList.add('right'); else if(bm===m) b.classList.add('wrong'); });
+  document.getElementById('qstreak').textContent=streak;
+  // explicación
+  const parts=Q.defs.map(d=>({d,m:mult(Q.att,d)}));
+  const calc = Q.defs.length>1 ? `<div class="calc">${parts.map(p=>`<span>${mini(Q.att)} → ${mini(p.d)} <b>${NUM[p.m]}</b></span>`).join('<span>·</span>')}<span>= <b>${NUM[Q.ans]}</b></span></div>` : '';
+  const lines=memo(Q.att,Q.defs);
+  const fb=document.getElementById('qfb');
+  fb.innerHTML=`<div class="fbh ${right?'ok':'ko'}">${right?tr('correct'):tr('wrongWas')(label(Q.ans))}</div>${calc}${lines.map(l=>`<div class="mn2">${l}</div>`).join('')}`;
+  fb.hidden=false;
+  document.getElementById('qnext').hidden=false;
+  const ms = P.pause==='manual' ? 0 : P.pause==='d5' ? 5000 : P.pause==='d5err' ? (right?1200:5000) : (right?700:1500);
+  if(ms){ setTimer(ms,true); nextT=setTimeout(newQuestion,ms); }
+  queueSave(); renderSummary();
+}
+
+/* ===== Preguntas de tipo completo: colocar los 18 tipos en su columna ===== */
+const ZONES=[{m:2,s:'x2'},{m:1,s:'x1'},{m:.5,s:'x0.5'},{m:0,s:'x0'}];
+let place={}, sel=null;
+function sortChance(){
+  if(!P.sdef && !P.satk) return 0;
+  const base={low:.1,mid:.2,high:.33}[P.sfreq]||.1;
+  if(!P.smart) return base;
+  let ok=0,n=0; for(const v of Object.values(ST.s||{})){ ok+=v[2]; n+=v[3]; }
+  const err=(n-ok+1)/(n+6);                    // sin datos ≈ 1/6
+  return Math.min(.5, base*(.6+3*err));         // fallas mucho → salen más; lo dominas → salen menos
+}
+function pickSort(){
+  const modes=[]; if(P.sdef) modes.push('def'); if(P.satk) modes.push('atk');
+  const c=[]; modes.forEach(mode=>(P.focus?[P.focus]:IDS).forEach(t=>c.push({mode,t,key:mode+':'+t})));
+  const pool=c.length>1&&Q?c.filter(x=>x.key!==Q.key):c;
+  const w=x=>{ if(!P.smart) return 1; const s=(ST.s||{})[x.key]; const err=s?(s[3]-s[2]+1)/(s[3]+4):.35; return .3+4*err; };
+  const ws=pool.map(w), tot=ws.reduce((a,b)=>a+b,0); let r=Math.random()*tot, pick=pool[pool.length-1];
+  for(let i=0;i<pool.length;i++){ r-=ws[i]; if(r<=0){ pick=pool[i]; break; } }
+  const truth={}; IDS.forEach(id=>truth[id]= pick.mode==='def' ? mult(id,pick.t) : mult(pick.t,id));
+  return {kind:'sort',...pick,truth};
+}
+function chipHTML(id){
+  const t=BY[id]; let cls='sc', tag='';
+  if(answered){ const ok=place[id]===Q.truth[id]; cls+=ok?' good':' bad'; if(!ok) tag=`<span class="fix">→ ${NUM[Q.truth[id]]}</span>`; }
+  else if(sel===id) cls+=' sel';
+  return `<button class="${cls}" data-id="${id}" ${answered?'':'draggable="true"'} aria-label="${t.n}">${iconSVG(t,18)}<span>${t.n}</span>${tag}</button>`;
+}
+function renderBoard(){
+  const zone=(z,i)=>`<div class="zone${sel&&!answered?' armed':''}${z.m===0?' imm':''}" data-m="${z.m}"><div class="zh"><b>${tr('zones')[i]}</b><span>${z.s}</span><span class="k">${i+1}</span></div>
+    <div class="zc">${IDS.filter(id=>place[id]===z.m).map(chipHTML).join('')}</div></div>`;
+  document.getElementById('qsort').innerHTML=`<div class="cols">${ZONES.slice(0,3).map(zone).join('')}</div>${zone(ZONES[3],3)}`;
+}
+function moveTo(id,m){ if(answered||!id) return; place[id]=m; sel=null; renderBoard(); }
+function checkSort(){
+  if(answered||!Q||Q.kind!=='sort') return; answered=true; sel=null;
+  let ok=0; const wrongM=new Set();
+  IDS.forEach(id=>{
+    const truth=Q.truth[id], got=place[id], right=truth===got;
+    if(right) ok++; else wrongM.add(truth);
+    if(truth!==1||got!==1){ const k=Q.mode==='def'? id+'>'+Q.t : Q.t+'>'+id; const s=ST.m[k]||[0,0]; ST.m[k]=[s[0]+(right?1:0),s[1]+1]; }
+  });
+  const perfect=ok===IDS.length;
+  ST.s=ST.s||{}; const s=ST.s[Q.key]||[0,0,0,0]; ST.s[Q.key]=[s[0]+(perfect?1:0),s[1]+1,s[2]+ok,s[3]+IDS.length];
+  ST.total++; if(perfect) ST.ok++;
+  streak=perfect?streak+1:0; ST.best=Math.max(ST.best||0,streak);
+  document.getElementById('qstreak').textContent=streak;
+  renderBoard();
+  const t=Q.t, lines=[];
+  const add=l=>{ if(l&&!lines.includes(l)) lines.push(l); };
+  [...wrongM].sort((a,b)=>b-a).forEach(m=>{
+    if(m===2) add(mnHTML(MN[t][Q.mode==='def'?'d2':'a2']));
+    else if(m===.5) add(mnHTML(MN[t][Q.mode==='def'?'d05':'a05']));
+    else if(m===0) IDS.forEach(id=>{ const k=Q.mode==='def'? id+'>'+t : t+'>'+id; if(IMMN[k]) add(mnHTML(IMMN[k])); });
+    else add(Q.mode==='def' ? tr('restDef')(mini(t)) : tr('restAtk')(mini(t)));
+  });
+  const fb=document.getElementById('qfb');
+  fb.innerHTML=`<div class="fbh ${perfect?'ok':'ko'}">${perfect?tr('perfect'):tr('okOf')(ok)}</div>${perfect?'':`<p class="neu">${tr('redHint')}</p>`}${lines.map(l=>`<div class="mn2">${l}</div>`).join('')}`;
+  fb.hidden=false;
+  document.getElementById('qcheck').hidden=true;
+  document.getElementById('qnext').hidden=false;
+  queueSave(); renderSummary();
+}
+function initSort(){
+  const box=document.getElementById('qsort');
+  box.addEventListener('click',ev=>{
+    if(answered) return;
+    const chip=ev.target.closest('.sc'), zone=ev.target.closest('.zone');
+    if(chip){ const id=chip.dataset.id;
+      if(sel && sel!==id && place[sel]!==place[id]) moveTo(sel,place[id]);
+      else { sel = sel===id ? null : id; renderBoard(); }
+      return; }
+    if(zone && sel) moveTo(sel,+zone.dataset.m);
+  });
+  box.addEventListener('dragstart',ev=>{ const c=ev.target.closest('.sc'); if(!c||answered) return; sel=c.dataset.id; try{ev.dataTransfer.setData('text/plain',sel);}catch(e){} ev.dataTransfer.effectAllowed='move'; });
+  box.addEventListener('dragover',ev=>{ const z=ev.target.closest('.zone'); if(!z||answered) return; ev.preventDefault(); box.querySelectorAll('.zone.over').forEach(x=>x!==z&&x.classList.remove('over')); z.classList.add('over'); });
+  box.addEventListener('dragleave',ev=>{ const z=ev.target.closest('.zone'); if(z&&!z.contains(ev.relatedTarget)) z.classList.remove('over'); });
+  box.addEventListener('drop',ev=>{ const z=ev.target.closest('.zone'); if(!z) return; ev.preventDefault(); let id=sel; try{ id=ev.dataTransfer.getData('text/plain')||sel; }catch(e){} moveTo(id,+z.dataset.m); });
+  box.addEventListener('dragend',()=>box.querySelectorAll('.zone.over').forEach(x=>x.classList.remove('over')));
+  document.getElementById('qcheck').addEventListener('click',checkSort);
+}
+function sortSummary(){
+  const rows=Object.entries(ST.s||{}).map(([k,[pf,n,ok,it]])=>({k,mode:k.split(':')[0],t:k.split(':')[1],pf,n,acc:Math.round(100*ok/it)})).sort((a,b)=>a.acc-b.acc);
+  if(!rows.length) return '';
+  return `<h3 class="mt">${tr('fullTypes')}</h3><ul class="fails">${rows.slice(0,8).map(r=>`<li><span class="mu">${r.mode==='def'?tr('sortRowDef'):tr('sortRowAtk')} ${mini(r.t)}</span><b style="color:${tone(r.acc)}">${r.acc}%</b><em class="cnt">${tr('times')(r.n)} · ${tr('perfects')(r.pf)}</em></li>`).join('')}</ul>`;
+}
+
+/* reglas para recordar un enfrentamiento (las mismas que la ficha de cada tipo) */
+function memo(att,defs){
+  // P.mnem: 'def' = reglas del que defiende (qué le entra / qué aguanta), 'atk' = del que ataca, 'both' = las dos
+  const parts=defs.map(d=>({d,m:mult(att,d)}));
+  const out=[]; const add=l=>{ if(l && !out.includes(l)) out.push(l); };
+  for(const p of parts){
+    if(p.m===1) continue;
+    if(p.m===0){ add(mnHTML(IMMN[att+'>'+p.d])); continue; }
+    if(P.mnem!=='atk') add(mnHTML(MN[p.d][p.m===2?'d2':'d05']));
+    if(P.mnem!=='def') add(mnHTML(MN[att][p.m===2?'a2':'a05']));
+  }
+  const neutral=parts.filter(p=>p.m===1).map(p=>p.d);
+  if(neutral.length) add(P.mnem==='atk'
+    ? tr('neutralAtk')(mini(att),neutral.map(mini))
+    : tr('neutralDef')(neutral.map(mini),mini(att)));
+  return out;
+}
+
+/* resumen */
+function agg(){
+  const A={},D={}; IDS.forEach(i=>{A[i]=[0,0];D[i]=[0,0];});
+  for(const [k,[ok,n]] of Object.entries(ST.m)){ const [a,ds]=k.split('>'); if(!A[a]) continue; A[a][0]+=ok;A[a][1]+=n;
+    ds.split('+').forEach(d=>{ if(D[d]){D[d][0]+=ok;D[d][1]+=n;} }); }
+  return {A,D};
+}
+const pct=s=>s[1]?Math.round(100*s[0]/s[1]):null;
+const tone=p=>p===null?'':p>=80?'var(--sup)':p>=55?'var(--warn)':'var(--res)';
+function bar(s){ const p=pct(s); if(p===null) return `<div class="b2 none"><span>—</span></div>`;
+  return `<div class="b2" title="${tr('ofN')(s[0],s[1])}"><i style="width:${Math.max(p,3)}%;background:${tone(p)};border-color:${tone(p)}"></i><span>${p}%<small> · ${s[1]}</small></span></div>`; }
+function renderSummary(){
+  const el=document.getElementById('summ');
+  if(!ST.total){ el.innerHTML=`<h2 class="sh">${tr('yourSummary')}</h2><p class="muted">${tr('summaryEmpty')}</p><p class="store">${tr(storeNote)}</p>`; return; }
+  const {A,D}=agg();
+  const score=id=>{const ok=A[id][0]+D[id][0], n=A[id][1]+D[id][1]; return {n, s:(ok+1)/(n+2), p:n?Math.round(100*ok/n):null};};
+  const ranked=IDS.map(id=>({id,...score(id)})).filter(x=>x.n>=4).sort((a,b)=>b.s-a.s);
+  const best=ranked.slice(0,3), worst=ranked.length>=6?ranked.slice(-3).reverse():[];
+  const fails=Object.entries(ST.m).map(([k,[ok,n]])=>({k,err:n-ok,n})).filter(x=>x.err>0).sort((a,b)=>b.err-a.err||a.n-b.n).slice(0,6);
+  const order=sortWorst ? IDS.slice().sort((a,b)=>{const sa=score(a),sb=score(b); return (sa.n?sa.s:2)-(sb.n?sb.s:2);}) : IDS;
+  const chipT=x=>`<button class="chip" data-focus="${x.id}" title="${tr('practiceX')(BY[x.id].n)}">${iconSVG(BY[x.id],20)}${BY[x.id].n} <b style="color:${tone(x.p)}">${x.p}%</b></button>`;
+  el.innerHTML=`<h2 class="sh">${tr('yourSummary')}</h2>
+    <div class="stats3"><div><b>${ST.total}</b><span>${tr('answeredN')}</span></div><div><b>${Math.round(100*ST.ok/ST.total)}%</b><span>${tr('accuracy')}</span></div><div><b>${ST.best||0}</b><span>${tr('bestStreak')}</span></div></div>
+    ${ranked.length>=3?`<div class="bw"><div><h3>${tr('bestAt')}</h3><div class="chips">${best.map(chipT).join('')}</div></div>
+    ${worst.length?`<div><h3>${tr('review')}</h3><div class="chips">${worst.map(chipT).join('')}</div><p class="tip">${tr('tapToPractice')}</p></div>`:''}</div>`
+    :`<p class="muted">${tr('needMore')}</p>`}
+    <div class="thead"><h3>${tr('accByType')}</h3><button class="link" id="sortBtn">${sortWorst?tr('gameOrder'):tr('worstFirst')}</button></div>
+    <div class="trow th"><span></span><span>${tr('whenAtk')}</span><span>${tr('whenDef')}</span></div>
+    ${order.map(id=>`<div class="trow"><span class="tn">${iconSVG(BY[id],18)}${BY[id].n}</span>${bar(A[id])}${bar(D[id])}</div>`).join('')}
+    ${fails.length?`<h3 class="mt">${tr('topFails')}</h3><ul class="fails">${fails.map(f=>{const [a,ds]=f.k.split('>');const d=ds.split('+');return `<li><span class="mu">${mini(a)} → ${d.map(mini).join(' / ')}</span><b>${NUM[effOf(a,d)]}</b><em class="cnt">${tr('failedN')(f.err,f.n)}</em>${memo(a,d).map(l=>`<div class="rec"><b>${tr('remember')}</b> ${l}</div>`).join('')}</li>`;}).join('')}</ul>`:''}
+    ${sortSummary()}
+    <div class="reset">${confirmReset?`<span>${tr('resetQ')}</span><button class="danger" id="rsYes">${tr('resetYes')}</button><button class="link" id="rsNo">${tr('cancel')}</button>`:`<button class="link" id="rsAsk">${tr('resetAsk')}</button>`}</div>
+    <p class="store">${tr(storeNote)}</p>`;
+}
+document.getElementById('summ').addEventListener('click',ev=>{
+  const t=ev.target.closest('button'); if(!t) return;
+  if(t.dataset.focus){ P.focus=t.dataset.focus; document.getElementById('pfocus').value=P.focus; lsSet(LS_SET,P); newQuestion(); document.querySelector('.quiz').scrollIntoView({behavior:'smooth',block:'start'}); return; }
+  if(t.id==='sortBtn'){ sortWorst=!sortWorst; renderSummary(); }
+  if(t.id==='rsAsk'){ confirmReset=true; renderSummary(); }
+  if(t.id==='rsNo'){ confirmReset=false; renderSummary(); }
+  if(t.id==='rsYes'){ confirmReset=false; ST={total:0,ok:0,best:0,m:{},s:{}}; streak=0; document.getElementById('qstreak').textContent=0; queueSave(); renderSummary(); }
+});
+
+/* guardado: base de datos de la página (privada por persona) y copia en el navegador */
+let dbDoc=null, saving=false, dirty=false, saveT=null;
+const toRows=s=>({v:1,total:s.total,ok:s.ok,best:s.best||0,rows:Object.entries(s.m).map(([k,[o,n]])=>[k,o,n]),srows:Object.entries(s.s||{}).map(([k,v])=>[k,...v])});
+const fromRows=d=>({total:d.total||0,ok:d.ok||0,best:d.best||0,m:Object.fromEntries((d.rows||[]).map(([k,o,n])=>[k,[o,n]])),s:Object.fromEntries((d.srows||[]).map(([k,...v])=>[k,v]))});
+function queueSave(){ lsSet(LS_ST,toRows(ST)); if(!dbDoc) return; dirty=true; clearTimeout(saveT); saveT=setTimeout(flush,1500); }
+async function flush(){
+  if(!dbDoc||saving||!dirty) return; saving=true; dirty=false;
+  try{ await dbDoc.set(toRows(ST)); }
+  catch(e){ if(e&&(e.code==='invalid_argument'||e.code==='revoked'||e.code==='not_granted')){ dbDoc=null; storeNote='storeLocalOnly'; renderSummary(); } else dirty=true; }
+  saving=false; if(dirty&&dbDoc) saveT=setTimeout(flush,3000);
+}
+async function initStore(){
+  const l=lsGet(LS_ST); if(l&&l.rows) ST=fromRows(l);
+  renderSummary();
+  try{
+    const c=window.claude; if(!c||!c.use) return;
+    const [db,user]=await Promise.all([c.use('db'),c.use('user')]);
+    if(!db||!user) return;
+    const id=await user.id(); if(!id) return;
+    const ref=db.doc('data/users/'+id+'/practica');
+    const snap=await ref.get(); dbDoc=ref;
+    if(snap.exists){ const d=fromRows(snap.data()); if(d.total>=ST.total){ ST=d; lsSet(LS_ST,toRows(ST)); } else queueSave(); }
+    else if(ST.total) queueSave();
+    storeNote='storeAccount';
+    renderSummary();
+  }catch(e){ dbDoc=null; }
+}
+
+/* ajustes */
+function initPractice(){
+  focusOptions();
+  document.querySelectorAll('input[name=pdef]').forEach(r=>r.checked=r.value===P.def);
+  document.querySelectorAll('input[name=ppause]').forEach(r=>r.checked=r.value===P.pause);
+  document.querySelectorAll('input[name=pfmt]').forEach(r=>r.checked=r.value===P.fmt);
+  document.querySelectorAll('input[name=pmnem]').forEach(r=>r.checked=r.value===P.mnem);
+  document.getElementById('pextra').checked=P.extra; document.getElementById('psmart').checked=P.smart; document.getElementById('pimm').checked=P.imm;
+  document.getElementById('psdef').checked=P.sdef; document.getElementById('psatk').checked=P.satk; document.getElementById('psfreq').value=P.sfreq;
+  document.getElementById('prset').addEventListener('change',ev=>{
+    const t=ev.target;
+    if(t.name==='pmnem'){ P.mnem=t.value; lsSet(LS_SET,P); renderSummary(); return; }
+    if(t.name==='pdef') P.def=t.value; else if(t.name==='ppause') P.pause=t.value; else if(t.name==='pfmt') P.fmt=t.value;
+    else if(t.id==='pfocus') P.focus=t.value; else if(t.id==='pextra') P.extra=t.checked; else if(t.id==='psmart') P.smart=t.checked; else if(t.id==='pimm') P.imm=t.checked;
+    else if(t.id==='psdef') P.sdef=t.checked; else if(t.id==='psatk') P.satk=t.checked; else if(t.id==='psfreq') P.sfreq=t.value;
+    lsSet(LS_SET,P);
+    if(!answered) newQuestion();
+  });
+  if(window.innerWidth<860) document.getElementById('prset').open=false;
+  document.getElementById('qopts').addEventListener('click',ev=>{const b=ev.target.closest('.opt'); if(b) answer(+b.dataset.m);});
+  document.getElementById('qnext').addEventListener('click',()=>newQuestion());
+  initSort();
+  document.addEventListener('keydown',ev=>{
+    if(S.view!=='practica'||ev.altKey||ev.ctrlKey||ev.metaKey) return;
+    if(/^(INPUT|SELECT|TEXTAREA)$/.test(ev.target.tagName)) return;
+    if(Q && Q.kind==='sort' && !answered){
+      if(/^[1-4]$/.test(ev.key) && sel){ ev.preventDefault(); moveTo(sel,ZONES[+ev.key-1].m); }
+      else if(ev.key==='Enter'){ ev.preventDefault(); checkSort(); }
+      return;
+    }
+    if(!answered && /^[1-6]$/.test(ev.key)){ const b=document.querySelectorAll('#qopts .opt')[+ev.key-1]; if(b){ev.preventDefault(); answer(+b.dataset.m);} }
+    else if(answered && (ev.key==='Enter'||ev.key===' ')){ ev.preventDefault(); newQuestion(); }
+  });
+  initStore();
+}
+
+/* controles */
+const tabs=[...document.querySelectorAll('[role=tab]')];
+function setView(v){
+  S.view=v; S.hover=null;
+  tabs.forEach(b=>b.setAttribute('aria-selected',String(b.dataset.view===v)));
+  ['circular','fuerzas','estatico','grupos'].forEach(k=>document.getElementById('svg-'+k).toggleAttribute('hidden',k!==v));
+  const prac = v==='practica';
+  document.getElementById('stage').hidden = prac;
+  document.getElementById('practice').hidden = !prac;
+  document.getElementById('showGrp').hidden = prac;
+  document.getElementById('dragGrp').hidden = v!=='fuerzas';
+  document.getElementById('stage').classList.toggle('wide',v==='estatico');
+  document.getElementById('modeGrp').hidden = v==='estatico' || prac;
+  if(prac && !Q) newQuestion();
+  setHint();
+  try{history.replaceState(null,'','#'+v);}catch(e){}
+  refresh();
+}
+tabs.forEach(b=>b.addEventListener('click',()=>setView(b.dataset.view)));
+document.getElementById('dragChk').addEventListener('change',e=>{S.drag=e.target.checked;});
+document.getElementById('t2').addEventListener('click',e=>{S.show2=!S.show2;e.currentTarget.setAttribute('aria-pressed',S.show2);refresh();});
+document.getElementById('t05').addEventListener('click',e=>{S.show05=!S.show05;e.currentTarget.setAttribute('aria-pressed',S.show05);refresh();});
+document.querySelectorAll('#modes button').forEach(b=>b.addEventListener('click',()=>{
+  S.mode=b.dataset.mode; document.querySelectorAll('#modes button').forEach(x=>x.setAttribute('aria-pressed',String(x===b))); refresh();
+}));
+
+function setHint(){
+  const v=S.view;
+  document.getElementById('hint').textContent = tr(v==='estatico'?'hintStatic':v==='grupos'?'hintGroups':v==='fuerzas'?'hintForce':'hintCircular');
+}
+function focusOptions(){
+  const sel=document.getElementById('pfocus');
+  sel.innerHTML=`<option value="">${tr('allTypes')}</option>`+TYPES.map(t=>`<option value="${t.id}">${t.n}</option>`).join('');
+  sel.value=P.focus;
+}
+/* cambio de idioma: textos fijos, nombres de los grafos y lo que se pinta con JS */
+function applyLang(){
+  document.documentElement.lang=L;
+  document.title=tr('title');
+  MN=L==='en'?MN_EN:MN_ES; IMMN=L==='en'?IMMN_EN:IMMN_ES;
+  document.querySelectorAll('[data-i18n]').forEach(el=>el.textContent=tr(el.dataset.i18n));
+  document.querySelectorAll('[data-i18n-html]').forEach(el=>el.innerHTML=tr(el.dataset.i18nHtml));
+  document.querySelectorAll('[data-i18n-aria]').forEach(el=>el.setAttribute('aria-label',tr(el.dataset.i18nAria)));
+  document.querySelectorAll('[data-lang]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.lang===L)));
+  d3.selectAll('.lab').text(d=>BY[d.id].n);
+  d3.selectAll('g.n title').text(d=>BY[d.id].n);
+  d3.selectAll('g.n').attr('aria-label',d=>BY[d.id].n);
+  d3.selectAll('.grp-lab').text(function(){ return tr(this.dataset.k); });
+}
+function setLang(l){
+  if(l===L) return;
+  L=l; try{ localStorage.setItem(LS_LANG,L); }catch(e){}
+  applyLang(); setHint(); focusOptions(); refresh(); renderSummary();
+  if(Q){ if(answered) newQuestion(); else renderQuestion(); }
+}
+document.querySelectorAll('[data-lang]').forEach(b=>b.addEventListener('click',()=>setLang(b.dataset.lang)));
+
+buildCircle('svg-circular',true);
+buildForce('svg-fuerzas');
+buildCircle('svg-estatico',false);
+buildGroups('svg-grupos');
+const h=(location.hash||'').slice(1);
+applyLang();
+initPractice();
+setView(['circular','fuerzas','grupos','practica'].includes(h)?h:'circular');
+</script>
+</body>
+</html>
