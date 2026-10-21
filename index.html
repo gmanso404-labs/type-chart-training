@@ -186,6 +186,11 @@ select{font:inherit;padding:7px 9px;border-radius:8px;border:1px solid var(--lin
 .danger{background:var(--res);color:var(--on-mark);border:0;border-radius:7px;padding:6px 12px;font:600 .82rem var(--body);cursor:pointer}
 .store{font-size:.76rem;color:var(--muted);margin:10px 0 0}
 .hintf{font-size:.78rem;color:var(--muted);margin:2px 0 0}
+.xfer{margin-top:16px;border-top:1px solid var(--line)}
+.xbtns{display:flex;flex-wrap:wrap;gap:6px 16px;align-items:center;margin-top:8px}
+.xfer textarea{width:100%;box-sizing:border-box;margin-top:8px;padding:8px;border-radius:8px;border:1px solid var(--line);background:var(--bg);color:var(--fg);font:500 .76rem/1.4 ui-monospace,Consolas,monospace;resize:vertical;word-break:break-all}
+.xmsg{font-size:.84rem;margin:8px 0 0}
+.xmsg.ok{color:var(--sup)} .xmsg.ko{color:var(--res)}
 .board{display:flex;flex-direction:column;gap:8px}
 .cols{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
 .zone{border:1.5px dashed var(--line);border-radius:10px;padding:8px;min-height:64px;display:flex;flex-direction:column;gap:6px;min-width:0;transition:border-color .15s,background .15s}
@@ -360,6 +365,11 @@ es:{
   accByType:'Acierto por tipo', gameOrder:'Ver en orden del juego', worstFirst:'Ver peores primero',
   topFails:'Tus fallos más repetidos', failedN:(e,n)=>`Fallada ${e} ${e===1?'vez':'veces'} de ${n}`, remember:'Recuerda:',
   resetQ:'¿Borrar todo tu historial de práctica?', resetYes:'Sí, borrar', cancel:'Cancelar', resetAsk:'Borrar estadísticas',
+  xferTitle:'Pasar tu progreso a otro dispositivo', exportBtn:'Exportar progreso', importBtn:'Importar progreso',
+  exportHelp:'Copia este código y pégalo en «Importar progreso» en el otro dispositivo o navegador.',
+  importHelp:'Pega aquí el código exportado. Sustituye el progreso que tengas en este navegador.',
+  copy:'Copiar', copied:'Copiado', importDo:'Importar', close:'Cerrar',
+  importOk:n=>`Progreso importado: ${n} ${n===1?'respuesta':'respuestas'}.`, importBad:'Ese código no es válido. Asegúrate de copiarlo entero (empieza por TCT).',
   storeLocal:'Guardado en este navegador', storeLocalOnly:'Guardado solo en este navegador', storeAccount:'Guardado en tu cuenta: lo verás en cualquier dispositivo'
 },
 en:{
@@ -408,6 +418,11 @@ en:{
   accByType:'Accuracy by type', gameOrder:'Show in game order', worstFirst:'Show worst first',
   topFails:'Your most repeated mistakes', failedN:(e,n)=>`Missed ${e} ${e===1?'time':'times'} out of ${n}`, remember:'Remember:',
   resetQ:'Delete your whole practice history?', resetYes:'Yes, delete', cancel:'Cancel', resetAsk:'Delete stats',
+  xferTitle:'Move your progress to another device', exportBtn:'Export progress', importBtn:'Import progress',
+  exportHelp:'Copy this code and paste it into “Import progress” on the other device or browser.',
+  importHelp:'Paste the exported code here. It replaces the progress you have in this browser.',
+  copy:'Copy', copied:'Copied', importDo:'Import', close:'Close',
+  importOk:n=>`Progress imported: ${n} ${n===1?'answer':'answers'}.`, importBad:'That code is not valid. Make sure you copy all of it (it starts with TCT).',
   storeLocal:'Saved in this browser', storeLocalOnly:'Saved only in this browser', storeAccount:'Saved to your account: you will see it on any device'
 }};
 const tr=k=>(k in STR[L]?STR[L]:STR.es)[k];
@@ -1084,8 +1099,13 @@ const tone=p=>p===null?'':p>=80?'var(--sup)':p>=55?'var(--warn)':'var(--res)';
 function bar(s){ const p=pct(s); if(p===null) return `<div class="b2 none"><span>—</span></div>`;
   return `<div class="b2" title="${tr('ofN')(s[0],s[1])}"><i style="width:${Math.max(p,3)}%;background:${tone(p)};border-color:${tone(p)}"></i><span>${p}%<small> · ${s[1]}</small></span></div>`; }
 function renderSummary(){
-  const el=document.getElementById('summ');
-  if(!ST.total){ el.innerHTML=`<h2 class="sh">${tr('yourSummary')}</h2><p class="muted">${tr('summaryEmpty')}</p><p class="store">${tr(storeNote)}</p>`; return; }
+  const el=document.getElementById('summ'), kept=document.getElementById('xfIn')?.value;
+  renderSummaryInner(el);
+  const inp=document.getElementById('xfIn'); if(inp&&kept) inp.value=kept;
+  if(xfer==='export') exportCode().then(c=>{ xferCode=c; const a=document.getElementById('xfCode'); if(a) a.value=c; });
+}
+function renderSummaryInner(el){
+  if(!ST.total){ el.innerHTML=`<h2 class="sh">${tr('yourSummary')}</h2><p class="muted">${tr('summaryEmpty')}</p>${xferHTML()}<p class="store">${tr(storeNote)}</p>`; return; }
   const {A,D}=agg();
   const score=id=>{const ok=A[id][0]+D[id][0], n=A[id][1]+D[id][1]; return {n, s:(ok+1)/(n+2), p:n?Math.round(100*ok/n):null};};
   const ranked=IDS.map(id=>({id,...score(id)})).filter(x=>x.n>=4).sort((a,b)=>b.s-a.s);
@@ -1104,10 +1124,22 @@ function renderSummary(){
     ${fails.length?`<h3 class="mt">${tr('topFails')}</h3><ul class="fails">${fails.map(f=>{const [a,ds]=f.k.split('>');const d=ds.split('+');return `<li><span class="mu">${mini(a)} → ${d.map(mini).join(' / ')}</span><b>${NUM[effOf(a,d)]}</b><em class="cnt">${tr('failedN')(f.err,f.n)}</em>${memo(a,d).map(l=>`<div class="rec"><b>${tr('remember')}</b> ${l}</div>`).join('')}</li>`;}).join('')}</ul>`:''}
     ${sortSummary()}
     <div class="reset">${confirmReset?`<span>${tr('resetQ')}</span><button class="danger" id="rsYes">${tr('resetYes')}</button><button class="link" id="rsNo">${tr('cancel')}</button>`:`<button class="link" id="rsAsk">${tr('resetAsk')}</button>`}</div>
+    ${xferHTML()}
     <p class="store">${tr(storeNote)}</p>`;
 }
-document.getElementById('summ').addEventListener('click',ev=>{
+document.getElementById('summ').addEventListener('click',async ev=>{
   const t=ev.target.closest('button'); if(!t) return;
+  if(t.id==='xfExp'){ xfer='export'; xferMsg=null; xferCopied=false; xferCode=await exportCode(); renderSummary(); return; }
+  if(t.id==='xfImp'){ xfer='import'; xferMsg=null; renderSummary(); document.getElementById('xfIn').focus(); return; }
+  if(t.id==='xfClose'){ xfer=null; xferMsg=null; renderSummary(); return; }
+  if(t.id==='xfCopy'){
+    try{ await navigator.clipboard.writeText(xferCode); }
+    catch(e){ const a=document.getElementById('xfCode'); a.select(); try{ document.execCommand('copy'); }catch(_){} }
+    xferCopied=true; renderSummary(); return; }
+  if(t.id==='xfDo'){
+    try{ ST=await importCode(document.getElementById('xfIn').value); streak=0; document.getElementById('qstreak').textContent=0; queueSave(); xfer=null; xferMsg={ok:true,n:ST.total}; }
+    catch(e){ xferMsg={ok:false}; }
+    renderSummary(); return; }
   if(t.dataset.focus){ P.focus=t.dataset.focus; document.getElementById('pfocus').value=P.focus; lsSet(LS_SET,P); newQuestion(); document.querySelector('.quiz').scrollIntoView({behavior:'smooth',block:'start'}); return; }
   if(t.id==='sortBtn'){ sortWorst=!sortWorst; renderSummary(); }
   if(t.id==='rsAsk'){ confirmReset=true; renderSummary(); }
@@ -1119,6 +1151,42 @@ document.getElementById('summ').addEventListener('click',ev=>{
 let dbDoc=null, saving=false, dirty=false, saveT=null;
 const toRows=s=>({v:1,total:s.total,ok:s.ok,best:s.best||0,rows:Object.entries(s.m).map(([k,[o,n]])=>[k,o,n]),srows:Object.entries(s.s||{}).map(([k,v])=>[k,...v])});
 const fromRows=d=>({total:d.total||0,ok:d.ok||0,best:d.best||0,m:Object.fromEntries((d.rows||[]).map(([k,o,n])=>[k,[o,n]])),s:Object.fromEntries((d.srows||[]).map(([k,...v])=>[k,v]))});
+/* exportar / importar: TCT1.<base64url(deflate-raw(JSON))>; TCT0. sin comprimir si el navegador no tiene CompressionStream */
+let xfer=null, xferCode='', xferMsg=null, xferCopied=false;
+const b64e=u8=>{ let s=''; u8.forEach(b=>s+=String.fromCharCode(b)); return btoa(s).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,''); };
+const b64d=str=>{ str=str.replace(/-/g,'+').replace(/_/g,'/'); const s=atob(str+'==='.slice((str.length+3)%4)); return Uint8Array.from(s,c=>c.charCodeAt(0)); };
+const pipeU8=async(u8,ts)=>new Uint8Array(await new Response(new Blob([u8]).stream().pipeThrough(ts)).arrayBuffer());
+async function exportCode(){
+  const raw=new TextEncoder().encode(JSON.stringify(toRows(ST)));
+  if(typeof CompressionStream==='function'){ try{ return 'TCT1.'+b64e(await pipeU8(raw,new CompressionStream('deflate-raw'))); }catch(e){} }
+  return 'TCT0.'+b64e(raw);
+}
+async function importCode(code){
+  const m=/^TCT([01])\.([A-Za-z0-9_-]+)$/.exec(String(code).replace(/\s+/g,''));
+  if(!m) throw new Error('format');
+  let u8=b64d(m[2]);
+  if(m[1]==='1') u8=await pipeU8(u8,new DecompressionStream('deflate-raw'));
+  return cleanRows(JSON.parse(new TextDecoder().decode(u8)));
+}
+/* solo deja pasar claves de tipos reales y contadores enteros coherentes */
+function cleanRows(d){
+  const nat=x=>Number.isInteger(x)&&x>=0&&x<1e7, isT=t=>IDS.includes(t);
+  if(!d||d.v!==1||!Array.isArray(d.rows)) throw new Error('shape');
+  const keyOk=k=>{ const m=/^([a-z]+)>([a-z]+)(?:\+([a-z]+))?$/.exec(k); return !!m && isT(m[1]) && isT(m[2]) && (!m[3]||isT(m[3])); };
+  const rows=d.rows.filter(r=>Array.isArray(r)&&r.length===3&&typeof r[0]==='string'&&keyOk(r[0])&&nat(r[1])&&nat(r[2])&&r[1]<=r[2]);
+  const srows=(Array.isArray(d.srows)?d.srows:[]).filter(r=>Array.isArray(r)&&r.length===5&&typeof r[0]==='string'&&/^(def|atk):[a-z]+$/.test(r[0])&&isT(r[0].split(':')[1])&&r.slice(1).every(nat));
+  const total=nat(d.total)?d.total:0;
+  return fromRows({total, ok:nat(d.ok)?Math.min(d.ok,total):0, best:nat(d.best)?d.best:0, rows, srows});
+}
+function xferHTML(){
+  let h=`<div class="xfer"><h3>${tr('xferTitle')}</h3><div class="xbtns"><button class="link" id="xfExp">${tr('exportBtn')}</button><button class="link" id="xfImp">${tr('importBtn')}</button></div>`;
+  if(xfer==='export') h+=`<textarea id="xfCode" rows="3" readonly onfocus="this.select()">${xferCode}</textarea><p class="hintf">${tr('exportHelp')}</p>
+    <div class="xbtns"><button class="primary" id="xfCopy">${tr(xferCopied?'copied':'copy')}</button><button class="link" id="xfClose">${tr('close')}</button></div>`;
+  if(xfer==='import') h+=`<textarea id="xfIn" rows="3" spellcheck="false" autocomplete="off" placeholder="TCT1.…"></textarea><p class="hintf">${tr('importHelp')}</p>
+    <div class="xbtns"><button class="primary" id="xfDo">${tr('importDo')}</button><button class="link" id="xfClose">${tr('close')}</button></div>`;
+  if(xferMsg) h+=`<p class="xmsg ${xferMsg.ok?'ok':'ko'}" role="status">${xferMsg.ok?tr('importOk')(xferMsg.n):tr('importBad')}</p>`;
+  return h+'</div>';
+}
 function queueSave(){ lsSet(LS_ST,toRows(ST)); if(!dbDoc) return; dirty=true; clearTimeout(saveT); saveT=setTimeout(flush,1500); }
 async function flush(){
   if(!dbDoc||saving||!dirty) return; saving=true; dirty=false;

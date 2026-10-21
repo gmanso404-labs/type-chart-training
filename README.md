@@ -11,6 +11,6 @@ No build step: `index.html` is the whole app (D3 7.9.0 from cdnjs). To run it lo
 python -m http.server 8000
 ```
 
-Then open http://localhost:8000/#practica. Practice stats are stored only in the browser's `localStorage`.
+Then open http://localhost:8000/#practica. Practice stats are stored only in the browser's `localStorage`; use "Export progress" / "Import progress" in the summary to move them to another device (a `TCT1.` code: deflate-raw compressed JSON in base64url).
 
 Non-profit fan project. Pokémon and the type names are trademarks of Nintendo, Game Freak and The Pokémon Company.
